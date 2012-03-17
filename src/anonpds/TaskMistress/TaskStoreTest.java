@@ -14,11 +14,15 @@ import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Vector;
 
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
@@ -26,14 +30,17 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.UIManager;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import anonpds.TaskMistress.TaskStore.TaskTreeNode;
+import anonpds.TaskMistress.TaskStoreTest.TreeItem;
 
 /**
  * Test program for TaskStore class.
  * @author anonpds <anonpds@gmail.com>
  */
-public class TaskStoreTest implements ActionListener {
+public class TaskStoreTest implements ActionListener, ListSelectionListener {
 	/** Text of the remove task button. */
 	private static final String REMOVE_TEXT = "Remove";
 
@@ -73,8 +80,14 @@ public class TaskStoreTest implements ActionListener {
 	/** Button for saving the task list. */
 	private JButton saveButton = new JButton(SAVE_TEXT);
 
+	/** Label to display information about the currently edited task. */
+	private JLabel editorLabel = new JLabel("No task selected");
+	
 	/** The editor for editing task contents. */
 	private TaskEditor editor = new TaskEditor();
+
+	/** The last selected item in the tree. */
+	private TreeItem oldSelection = null;
 
 	/**
 	 * Initialises the test program and creates the program window. 
@@ -109,10 +122,15 @@ public class TaskStoreTest implements ActionListener {
 		this.moveButton.addActionListener(this);
 		this.saveButton.addActionListener(this);
 		
+		/* add task data label and task editor to a panel */
+		JPanel editorPanel = new JPanel(new BorderLayout());
+		editorPanel.add(this.editorLabel, BorderLayout.NORTH);
+		editorPanel.add(new JScrollPane(this.editor), BorderLayout.CENTER);
+		
 		/* task list and task editor in a JSplitPane */
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
 		                                      new JScrollPane(this.taskPanel),
-		                                      new JScrollPane(this.editor));
+		                                      editorPanel);
 
 		/* add a populated JList to the task list panel */
 		this.taskPanel.add(this.populateJList());
@@ -143,13 +161,16 @@ public class TaskStoreTest implements ActionListener {
 	 * @return the populated JList
 	 */
 	private JList populateJList() {
-		/* store the items in a vector of JLabels */
+		/* store the items in a vector of TreeItems */
 		Vector<TreeItem> items = new Vector<TreeItem>();
 
 		/* recursively add all the tasks */
 		this.populateJListRecurse("", items, this.store.getRoot());
 
+		/* create the list and add selection listener to it */
 		this.displayList = new JList(items);
+		this.displayList.addListSelectionListener(this);
+		
 		return this.displayList;
 	}
 	
@@ -211,6 +232,7 @@ public class TaskStoreTest implements ActionListener {
 			this.store.addChild(addTo, name);
 			
 			/* finally, update the task list to reflect the changes */
+			/* TODO select the newly created task */
 			this.updateTaskList();
 		} else if (event.getSource() == this.removeButton) {
 			/* remove button pressed */
@@ -303,5 +325,33 @@ public class TaskStoreTest implements ActionListener {
 			if (node != null) return this.name + node.getName(); 
 			return this.name;
 		}
+	}
+
+	/**
+	 * Listeners for the task list component selection changes.
+	 * @param e the selection event
+	 */
+	@Override
+	public void valueChanged(ListSelectionEvent e) {
+		TreeItem item = (TreeItem) this.displayList.getSelectedValue();
+		
+		/* update the old selection if editor has changed */
+		if (this.oldSelection != null && this.editor.hasChanged()) {
+			this.oldSelection.getNode().setText(this.editor.getText());
+		}
+		
+		/* set the editor and editor label according to the selection */
+		if (item == null) {
+			this.editorLabel.setText("No task selected");
+			this.editor.close(null);
+		} else {
+			Date date = new Date(item.getNode().getCreationTime());
+			DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
+			this.editorLabel.setText("Created: " + format.format(date));
+			this.editor.open(item.getNode().getText());
+		}
+		
+		/* mark the selection for when the selection changes */
+		this.oldSelection = item;
 	}
 }

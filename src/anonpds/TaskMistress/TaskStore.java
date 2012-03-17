@@ -39,6 +39,9 @@ import java.util.Vector;
 public class TaskStore {
 	/** The name of the file that contains task meta data. */
 	private static final String META_FILE = "meta.txt";
+
+	/** The name of the file that contains task text. */
+	private static final String TEXT_FILE = "task.txt";
 	
 	/** The task tree that contains the stored tasks. */
 	TaskTreeNode taskTree = new TaskTreeNode(null);
@@ -194,8 +197,9 @@ public class TaskStore {
 		
 		/* write the node if not root and if dirty */
 		if (!node.isRoot() && node.isDirty()) {
-			/* DEBUG */ System.out.println("Writing out " + node.getName() + " to " + path.getPath());
+			/* write the meta data */
 			File metaFile = new File(path, META_FILE);
+			/* DEBUG */ System.out.println("Writing meta for " + node.getName() + " to " + metaFile.getPath());
 			try {
 				BufferedWriter writer = new BufferedWriter(new FileWriter(metaFile));
 				writer.write(node.getName() + "\n");
@@ -203,6 +207,17 @@ public class TaskStore {
 				writer.close();
 			} catch (Exception e) {
 				throw new Exception("can not write to " + metaFile.getPath() + ": " + e.getMessage());
+			}
+			
+			/* write the task text, if any */
+			File textFile = new File(path, TEXT_FILE);
+			/* DEBUG */ System.out.println("Writing text for " + node.getName() + " to " + textFile.getPath());
+			try {
+				BufferedWriter writer = new BufferedWriter(new FileWriter(textFile));
+				if (node.getText() != null) writer.write(node.getText());
+				writer.close();
+			} catch (Exception e) {
+				throw new Exception("can not write to " + textFile.getPath() + ": " + e.getMessage());
 			}
 		}
 		
@@ -286,6 +301,9 @@ public class TaskStore {
 		/** The file system name of the node. */
 		private String fsName;
 
+		/** The text of the task. */
+		private String text;
+
 		/**
 		 * Constructs a new tree node.
 		 * @param fsName the file system name; set to null, unless adding tasks from file
@@ -296,6 +314,7 @@ public class TaskStore {
 			this.parent = null;
 			this.name = null;
 			this.timeStamp = System.currentTimeMillis();
+			this.text = "";
 		}
 
 		/**
@@ -401,6 +420,23 @@ public class TaskStore {
 		 */
 		public String getFileSystemName() {
 			return this.fsName;
+		}
+
+		/**
+		 * Returns the text of the node.
+		 * @return the text of the node
+		 */
+		public String getText() {
+			return this.text;
+		}
+
+		/**
+		 * Sets the text of the node.
+		 * @param text the text to set
+		 */
+		public void setText(String text) {
+			this.dirty = true;
+			this.text = text;
 		}
 	}
 }
