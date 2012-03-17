@@ -7,8 +7,6 @@
  * Full license at <http://creativecommons.org/publicdomain/zero/1.0/>.
  */
 
-/* TODO add dirty flag to TaskTreeNode to see which nodes have changed; only write out those nodes */
-
 package anonpds.TaskMistress;
 
 import java.io.BufferedReader;
@@ -17,6 +15,9 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Vector;
+
+/* TODO add dirty flag to TaskTreeNode to see which nodes have changed; only write out those nodes */
+/* TODO add support for moving task nodes to under another task node */
 
 /**
  * A class that handles the storage of task trees in Task Mistress.
@@ -43,6 +44,9 @@ public class TaskStore {
 		this.path = path;
 		
 		/* add the directories and their sub-directories recursively as nodes */
+		/* TODO the addTaskDirectory function should be able to deal with the root node, so that there is no need
+		 * for this ugle bit of code.
+		 */
 		File[] files = this.path.listFiles();
 		for (File file : files) {
 			if (file.isDirectory()) this.addTaskDirectory(this.taskTree, file);
@@ -69,6 +73,7 @@ public class TaskStore {
 		TaskTreeNode node = new TaskTreeNode(path.getName());
 
 		/* read the meta data */
+		/* TODO implement a better way to handle the meta data */
 		String name = null, date = null;
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(metaFile));
@@ -79,7 +84,7 @@ public class TaskStore {
 			throw new Exception("can not access '" + metaFile.getPath() + "': " + e.getMessage());
 		}
 
-		/* attempt to parse the metadata */
+		/* attempt to parse the meta data */
 		if (name == null) throw new Exception("no name in metadata " + metaFile.getPath());
 		node.setName(name);
 		
@@ -114,6 +119,9 @@ public class TaskStore {
 	 * @param name the name of the new node to add
 	 */
 	public void addChild(TaskTreeNode node, String name) {
+		/* TODO rename this to just add; I considered having both addChild and addSibling, but now I can't think of
+		 * a reason to have addSibling, when you can just call: addChild(node.getParent(), name)
+		 */
 		TaskTreeNode newNode = new TaskTreeNode(null);
 		newNode.setName(name);
 		node.add(newNode);
@@ -124,6 +132,9 @@ public class TaskStore {
 	 * @param node the node to remove
 	 */
 	public void remove(TaskTreeNode node) {
+		/* TODO perhaps the node should just be marked non-existing, so that it could be removed from the file system
+		 * the next time the tree is saved (at the same time the node would be removed from memory) 
+		 */
 		if (node.isRoot()) return; /* never remove the root node */
 		node.getParent().remove(node);
 	}
@@ -133,6 +144,9 @@ public class TaskStore {
 	 * @throws Exception on any error
 	 */
 	public void writeOut() throws Exception {
+		/* TODO add a version of this that takes the root path as a parameter; useful for when there is an error
+		 * saving to the path set in the class instance, so the tree can be saved to another location
+		 */
 		this.writeOutRecurse(this.path, this.getRoot());
 	}
 
@@ -143,7 +157,6 @@ public class TaskStore {
 	 * @throws Exception on IO errors
 	 */
 	private void writeOutRecurse(File path, TaskTreeNode node) throws Exception {
-/* DEBUG */ System.out.println("Writing " + node.getName() + " to " + path.getPath());
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
 		
@@ -179,9 +192,11 @@ public class TaskStore {
 	 * @throws Exception if a suitable file system name cannot be found
 	 */
 	private void setFileSystemName(File path, TaskTreeNode node) throws Exception {
+		/* root does not have file system name */
 		if (node.getFileSystemName() != null) return;
-/* DEBUG */ System.out.println("Setting name for " + node.getName());
+
 		/* remove all silly characters from the node name and make everything lower-case */
+		/* TODO limit the file system name to something like 20 characters */
 		String name = "";
 		for (int i = 0; i < node.getName().length(); i++) {
 			char ch = node.getName().charAt(i);

@@ -11,6 +11,8 @@ package anonpds.TaskMistress;
 
 import javax.swing.JTextArea;
 
+/* TODO add display of task meta data (creation date, last modification date, file system name) */
+
 /**
  * Class that implements an editor component for editing tasks in Task Mistress.
  * @author anonpds
