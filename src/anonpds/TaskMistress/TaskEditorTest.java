@@ -22,6 +22,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.UIManager;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 /* TODO add display of task meta data (creation date, last modification date, file system name) */
 
@@ -29,12 +31,13 @@ import javax.swing.UIManager;
  * Test program for TaskEditor class.
  * @author anonpds <anonpds@gmail.com>
  */
-public class TaskEditorTest implements ActionListener {
+public class TaskEditorTest implements ActionListener, DocumentListener {
 	private JFrame frame = new JFrame("TaskEditor test");
 	private TaskEditor editor = new TaskEditor();
 	private JButton openButton = new JButton("Open");
 	private JButton closeButton = new JButton("Close");
 	private JLabel dateLabel = new JLabel("Creation date");
+	private boolean modified = false;
 
 	/** Default constructor. */
 	public TaskEditorTest() {
@@ -54,6 +57,9 @@ public class TaskEditorTest implements ActionListener {
 		panel.add(menuBar, BorderLayout.NORTH);
 		panel.add(new JScrollPane(this.editor), BorderLayout.CENTER);
 		frame.add(panel);
+		
+		/* set document change listener for the editor */
+		this.editor.getDocument().addDocumentListener(this);
 		
 		/* set the window size and make it visible */
 		frame.setSize(640, 400);
@@ -76,6 +82,7 @@ public class TaskEditorTest implements ActionListener {
 			}
 			this.dateLabel.setText((new Date(System.currentTimeMillis())).toString());
 			this.editor.open("");
+			this.modified = false;
 		} else if (e.getSource() == this.closeButton) {
 			/* if the editor is already closed, do nothing */
 			if (!this.editor.isOpen()) return;
@@ -98,5 +105,41 @@ public class TaskEditorTest implements ActionListener {
 		
 		/* run the editor test */
 		new TaskEditorTest();
+	}
+
+	/**
+	 * Updates the status line to tell that the text has been modified.
+	 */
+	private void textModified() {
+		if (this.modified) return;
+		this.dateLabel.setText(this.dateLabel.getText() + " (modified)");
+		this.modified = true;
+	}
+
+	/**
+	 * Listens to text changes in the editor.
+	 * @param e the change event
+	 */
+	@Override
+	public void changedUpdate(DocumentEvent e) {
+		this.textModified();
+	}
+
+	/**
+	 * Listens to text inserts in the editor.
+	 * @param e the change event
+	 */
+	@Override
+	public void insertUpdate(DocumentEvent e) {
+		this.textModified();
+	}
+
+	/**
+	 * Listens to text removals in the editor.
+	 * @param e the change event
+	 */
+	@Override
+	public void removeUpdate(DocumentEvent e) {
+		this.textModified();
 	}
 }
