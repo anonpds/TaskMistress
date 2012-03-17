@@ -16,7 +16,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Vector;
 
-/* TODO add dirty flag to TaskTreeNode to see which nodes have changed; only write out those nodes */
 /* TODO add support for moving task nodes to under another task node */
 
 /**
@@ -34,7 +33,8 @@ public class TaskStore {
 	private File path;
 	
 	/**
-	 * Creates a new task store from the specified directory.
+	 * Creates a new task store from the specified directory. The directory is created if it doesn't exist and an
+	 * empty task store is initialized.
 	 * @param path the directory that stores the tasks
 	 * @throws Exception on any IO errors
 	 */
@@ -71,6 +71,9 @@ public class TaskStore {
 
 		/* create new tree node to hold the data */
 		TaskTreeNode node = new TaskTreeNode(path.getName());
+		
+		/* set the node non-dirty, as it was just read from the disk */
+		node.setDirty(false);
 
 		/* read the meta data */
 		/* TODO implement a better way to handle the meta data */
@@ -160,8 +163,9 @@ public class TaskStore {
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
 		
-		/* write the node (if not root) */
-		if (!node.isRoot()) {
+		/* write the node if not root and if dirty */
+		if (!node.isRoot() && node.isDirty()) {
+			/* DEBUG */ System.out.println("Writing out " + node.getName() + " to " + path.getPath());
 			File metaFile = new File(path, META_FILE);
 			try {
 				BufferedWriter writer = new BufferedWriter(new FileWriter(metaFile));
@@ -234,6 +238,10 @@ public class TaskStore {
 	 * @author anonpds
 	 */
 	static class TaskTreeNode {
+		/** Tells whether the node has changed since last write to disk. Should be set true when a node is created from
+		 * scratch and false to when a node is loaded from disk. Every change to the node should set it true. */
+		private boolean dirty;
+		
 		/** The name of the tree node. */
 		private String name;
 		
@@ -255,6 +263,7 @@ public class TaskStore {
 		 */
 		public TaskTreeNode(String fsName) {
 			this.fsName = fsName;
+			this.dirty = false;
 			this.parent = null;
 			this.name = null;
 			this.timeStamp = System.currentTimeMillis();
@@ -299,6 +308,22 @@ public class TaskStore {
 		 */
 		public boolean isRoot() {
 			return this.parent == null;
+		}
+		
+		/**
+		 * Tells whether the node was modified since it was last written out.
+		 * @return true if the node has unsaved changes, false it not
+		 */
+		public boolean isDirty() {
+			return this.dirty;
+		}
+
+		/**
+		 * Sets the node to dirty or non-dirty. Only dirty nodes are saved to disk when the tree is written out.
+		 * @param dirty true to set the node dirty, false for non-dirty
+		 */
+		public void setDirty(boolean dirty) {
+			this.dirty = dirty;
 		}
 
 		/**
