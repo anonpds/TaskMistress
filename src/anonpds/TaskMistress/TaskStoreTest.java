@@ -15,7 +15,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Vector;
 
@@ -34,7 +33,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import anonpds.TaskMistress.TaskStore.TaskTreeNode;
-import anonpds.TaskMistress.TaskStoreTest.TreeItem;
 
 /**
  * Test program for TaskStore class.
