@@ -12,9 +12,11 @@ package anonpds.TaskMistress;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Date;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -32,6 +34,7 @@ public class TaskEditorTest implements ActionListener {
 	private TaskEditor editor = new TaskEditor();
 	private JButton openButton = new JButton("Open");
 	private JButton closeButton = new JButton("Close");
+	private JLabel dateLabel = new JLabel("Creation date");
 
 	/** Default constructor. */
 	public TaskEditorTest() {
@@ -39,6 +42,7 @@ public class TaskEditorTest implements ActionListener {
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(openButton);
 		menuBar.add(closeButton);
+		menuBar.add(dateLabel);
 		
 		/* add listener for the buttons */
 		openButton.addActionListener(this);
@@ -70,6 +74,7 @@ public class TaskEditorTest implements ActionListener {
 						"Editor already open",
 						JOptionPane.YES_NO_OPTION) == JOptionPane.NO_OPTION) return;
 			}
+			this.dateLabel.setText((new Date(System.currentTimeMillis())).toString());
 			this.editor.open("");
 		} else if (e.getSource() == this.closeButton) {
 			/* if the editor is already closed, do nothing */
@@ -77,6 +82,7 @@ public class TaskEditorTest implements ActionListener {
 			
 			/* otherwise close the editor and put a nice non-editable text on it */
 			this.editor.close("Editor closed. Ha-ha! You can't edit me.");
+			this.dateLabel.setText("Creation time");
 		}
 	}
 
