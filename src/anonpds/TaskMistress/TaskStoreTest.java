@@ -42,6 +42,9 @@ public class TaskStoreTest implements ActionListener {
 
 	/** Text of the save task button. */
 	private static final String SAVE_TEXT = "Save";
+	
+	/** Text of the move task button. */
+	private static final String MOVE_TEXT = "Move";
 
 	/** The program main window */
 	JFrame frame = new JFrame("TaskStore test");
@@ -54,6 +57,12 @@ public class TaskStoreTest implements ActionListener {
 	
 	/** Button to add tasks. */
 	private JButton addButton = new JButton(ADD_TEXT);
+	
+	/** Button to move tasks. */
+	private JButton moveButton = new JButton(MOVE_TEXT);
+	
+	/** The item to move through the moveButton. */
+	private TreeItem moveItem = null;
 	
 	/** Panel that contains the task list. */
 	private JPanel taskPanel = new JPanel(new GridLayout(1,1));
@@ -91,11 +100,13 @@ public class TaskStoreTest implements ActionListener {
 		JMenuBar menuBar = new JMenuBar();
 		menuBar.add(this.removeButton);
 		menuBar.add(this.addButton);
+		menuBar.add(this.moveButton);
 		menuBar.add(this.saveButton);
 
 		/* add action listener to buttons */
 		this.removeButton.addActionListener(this);
 		this.addButton.addActionListener(this);
+		this.moveButton.addActionListener(this);
 		this.saveButton.addActionListener(this);
 		
 		/* task list and task editor in a JSplitPane */
@@ -218,6 +229,31 @@ public class TaskStoreTest implements ActionListener {
 			} catch (Exception e) {
 				/* CRITICAL it must be possible to change the save path if saving fails */
 				JOptionPane.showMessageDialog(this.frame, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			}
+		} else if (event.getSource() == this.moveButton) {
+			/* move button pressed; this is done in two phases:
+			 *  - on first press of the button the node to move is selected
+			 *  - on second press the destination node is selected */
+			TreeItem dest = (TreeItem)this.displayList.getSelectedValue();
+
+			if (this.moveItem != null) {
+				/* node to move selected; if destination not selected, move to root, else move under selected node */
+				if (dest == null) this.store.move(this.store.getRoot(), this.moveItem.getNode());
+				else this.store.move(dest.getNode(), this.moveItem.getNode());
+				
+				/* movement done; update the list */
+				this.updateTaskList();
+				this.moveItem = null;
+			} else {
+				/* no node selected yet for moving */
+				if (this.displayList.getSelectedValue() == null) {
+					/* error, no node selected */
+					JOptionPane.showMessageDialog(this.frame, "Please choose a node first.");
+				}
+				
+				/* use the selected node as the node to move, clear selection */
+				this.moveItem = dest; 
+				this.displayList.clearSelection();
 			}
 		}
 	}
