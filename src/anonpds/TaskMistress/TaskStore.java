@@ -17,6 +17,11 @@ import java.io.FileWriter;
 import java.util.Vector;
 
 /* TODO add support for moving task nodes to under another task node */
+/* TODO separate the TaskStore from the TaskTreeNode:
+ *      this is essential to allow different methods of storing the nodes on disk (for example as XML).
+ *      There should be a general TaskTreeNode structure that only contains the node data. The class can then be
+ *      overwritten by different TaskStore modules to include the information that is relevant to those classes. 
+ */
 
 /**
  * A class that handles the storage of task trees in Task Mistress.
