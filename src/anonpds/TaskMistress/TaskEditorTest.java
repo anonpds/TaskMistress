@@ -21,6 +21,8 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.UIManager;
 
+/* TODO add display of task meta data (creation date, last modification date, file system name) */
+
 /**
  * Test program for TaskEditor class.
  * @author anonpds <anonpds@gmail.com>
