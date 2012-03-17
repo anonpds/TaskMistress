@@ -16,7 +16,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.Vector;
 
-/* TODO add support for moving task nodes to under another task node */
 /* TODO separate the TaskStore from the TaskTreeNode:
  *      this is essential to allow different methods of storing the nodes on disk (for example as XML).
  *      There should be a general TaskTreeNode structure that only contains the node data. The class can then be
@@ -145,6 +144,19 @@ public class TaskStore {
 		 */
 		if (node.isRoot()) return; /* never remove the root node */
 		node.getParent().remove(node);
+	}
+	
+	/**
+	 * Moves a node and all its children under another node.
+	 * @param dest the destination node
+	 * @param node the node to move
+	 */
+	public void move(TaskTreeNode dest, TaskTreeNode node) {
+		/* never move root node */
+		if (node.isRoot()) return;
+		
+		node.getParent().remove(node);
+		dest.add(node);
 	}
 	
 	/**
