@@ -152,6 +152,8 @@ public class TaskStore {
 	 * @param node the node to move
 	 */
 	public void move(TaskTreeNode dest, TaskTreeNode node) {
+		/* CRITICAL this will mess out the file system layout; do not use it yet! */
+		
 		/* never move root node */
 		if (node.isRoot()) return;
 		
