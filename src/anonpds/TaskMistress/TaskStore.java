@@ -22,6 +22,16 @@ import java.util.Vector;
  *      overwritten by different TaskStore modules to include the information that is relevant to those classes. 
  */
 
+/* TODO how to fix movement of nodes:
+ *      first: the fs names of moved nodes need to be set to null, since they may no longer be valid
+ *      second: the old node folders need to be removed or moved (the latter is probably more complex)
+ *        - this could be implemented by first adding the exist/not-exist flag to nodes, and then actually making
+ *          a copy of the moved nodes, instead of really moving them; the old nodes would be marked non-existent
+ *          and would thus be removed from the file system the next time the nodes are saved
+ *        - the above way is quite inefficient, but it should do for now -- it will not be a problem, unless there
+ *          are huge numbers of nodes to move/save 
+ */
+
 /**
  * A class that handles the storage of task trees in Task Mistress.
  * @author anonpds
