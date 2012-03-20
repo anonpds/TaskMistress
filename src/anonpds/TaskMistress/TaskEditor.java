@@ -15,7 +15,7 @@ import javax.swing.event.DocumentListener;
 
 /**
  * Class that implements an editor component for editing tasks in Task Mistress.
- * @author anonpds
+ * @author anonpds <anonpds@gmail.com>
  */
 @SuppressWarnings("serial")
 public class TaskEditor extends JTextArea implements DocumentListener {
@@ -24,8 +24,6 @@ public class TaskEditor extends JTextArea implements DocumentListener {
 
 	/** Default constructor. */
 	public TaskEditor() {
-		super();
-		
 		/* enable word wrapping */
 		this.setWrapStyleWord(true);
 		this.setLineWrap(true);
