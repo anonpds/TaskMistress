@@ -75,6 +75,7 @@ public class TaskMistress {
 	 * 
 	 * @return the configuration file or null if no suitable place for the configuration file was found
 	 */
+	@SuppressWarnings("unused")
 	private static File getConfigFile() {
 		File path = null;
 		

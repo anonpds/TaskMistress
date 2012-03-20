@@ -14,11 +14,10 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.util.Enumeration;
-import java.util.Vector;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreePath;
 
 /* TODO separate the TaskStore from the TaskTreeNode:
  *      this is essential to allow different methods of storing the nodes on disk (for example as XML).
@@ -49,16 +48,16 @@ public class TaskStore {
 	/** The name of the file that contains task text. */
 	private static final String TEXT_FILE = "task.txt";
 	
-	/** The task tree that contains the stored tasks. */
-	TaskTreeNode taskTree = new TaskTreeNode(null);
+	/** The tree model that contains the stored task tree. */
+	private DefaultTreeModel treeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
 
 	/** The file system path in which the file is stored. */
 	private File path;
 	
 	/**
 	 * Creates a new task store from the specified directory. The directory is created if it doesn't exist and an
-	 * empty task store is initialized.
-	 * @param path the directory that stores the tasks
+	 * empty task store is initialised.
+	 * @param path the directory that stores the task tree
 	 * @throws Exception on any IO errors
 	 */
 	public TaskStore(File path) throws Exception {
@@ -72,7 +71,7 @@ public class TaskStore {
 		 */
 		File[] files = this.path.listFiles();
 		for (File file : files) {
-			if (file.isDirectory()) this.addTaskDirectory(this.taskTree, file);
+			if (file.isDirectory()) this.addTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
 		}
 		
 		/* DEBUG */ print();
@@ -82,23 +81,15 @@ public class TaskStore {
 	 * Adds the task to the store from a directory and recursively adds all the sub-tasks in sub-directories.
 	 * @param tree the tree node to add to
 	 * @param path the directory path to add
-	 * @throws Exception on any IO errors
+	 * @throws Exception on any IO or parse errors
 	 */
-	private void addTaskDirectory(TaskTreeNode tree, File path) throws Exception {
+	private void addTaskDirectory(DefaultMutableTreeNode tree, File path) throws Exception {
 		/* must be a directory */
 		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
 
-		/* the directory must contain the meta data file */
+		/* the directory must contain the meta data file; skip the directory if doesn't exist */
 		File metaFile = new File(path, META_FILE);
-		
-		/* skip the directory if the meta data file does not exist */
 		if (!metaFile.exists()) return;
-
-		/* create new tree node to hold the data */
-		TaskTreeNode node = new TaskTreeNode(path.getName());
-		
-		/* set the node non-dirty, as it was just read from the disk */
-		node.setDirty(false);
 
 		/* read the meta data */
 		/* TODO implement a better way to handle the meta data */
@@ -112,16 +103,10 @@ public class TaskStore {
 			throw new Exception("can not access '" + metaFile.getPath() + "': " + e.getMessage());
 		}
 
-		/* attempt to parse the meta data */
+		/* validate and parse the meta data */
 		if (name == null) throw new Exception("no name in metadata " + metaFile.getPath());
-		node.setName(name);
-		
 		if (date == null) throw new Exception("no date in metadata " + metaFile.getPath());
-		try {
-			node.setCreationTime(Long.parseLong(date));
-		} catch (NumberFormatException e) {
-			throw new Exception("date '" + date + "' invalid");
-		}
+		long timeStamp = Long.parseLong(date);
 		
 		/* read the task text if it exists */
 		File textFile = new File(path, TEXT_FILE);
@@ -137,9 +122,12 @@ public class TaskStore {
 				reader.close();
 			} catch (Exception e) { /* TODO error handling */ }
 		}
-		node.setText(text);
+
+		/* create the task from the read data */
+		Task task = new Task(name, path.getName(), text, timeStamp, false);
 		
 		/* add the node to the tree */
+		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
 		tree.add(node);
 		
 		/* finally recurse into any potential sub-directories */
@@ -153,8 +141,8 @@ public class TaskStore {
 	 * Returns the root node of the tree.
 	 * @return the root node
 	 */
-	public TaskTreeNode getRoot() {
-		return this.taskTree;
+	public DefaultMutableTreeNode getRoot() {
+		return (DefaultMutableTreeNode) this.treeModel.getRoot();
 	}
 
 	/**
@@ -163,14 +151,13 @@ public class TaskStore {
 	 * @param name the name of the new node to add
 	 * @return the added node
 	 */
-	public TaskTreeNode addChild(TaskTreeNode parent, String name) {
+	public DefaultMutableTreeNode addChild(DefaultMutableTreeNode parent, String name) {
 		/* TODO rename this to just add; I considered having both addChild and addSibling, but now I can't think of
 		 * a reason to have addSibling, when you can just call: addChild(node.getParent(), name)
 		 */
-		TaskTreeNode node = new TaskTreeNode(null);
-		node.setName(name);
+		Task task = new Task(name, null, "", System.currentTimeMillis(), true);
+		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
 		parent.add(node);
-		node.setDirty(true);
 		return(node);
 	}
 
@@ -179,19 +166,25 @@ public class TaskStore {
 	 * @param node the node to query
 	 * @return the file system path to the node
 	 */
-	private File getNodePath(TaskTreeNode node) {
+	private File getNodePath(DefaultMutableTreeNode node) {
 		/* start from the task tree root directory */
 		File path = this.path;
 
 		/* traverse the tree path to this node */
-		TreePath treePath = node.getPath();
-		Object[] paths = treePath.getPath();
+		TreeNode[] treePath = node.getPath();
+		
 		/* start traversal from second path object; first is root and already accounted for */
-		for (int i = 1; i < paths.length; i++) {
-			TaskTreeNode curNode = (TaskTreeNode) paths[i];
-			String curPath = curNode.getFileSystemName();
+		for (int i = 1; i < treePath.length; i++) {
+			/* get the Task object from the tree node */
+			DefaultMutableTreeNode curNode = (DefaultMutableTreeNode) treePath[i];
+			Task task = (Task) curNode.getUserObject();
+			
+			/* get the file system (plain) name of the task; create it, if it's not set */
+			String curPath = task.getPlainName();
 			if (curPath == null) this.setFileSystemName(path, curNode);
-			path = new File(path, curNode.getFileSystemName());
+			
+			/* add the task directory to path */
+			path = new File(path, task.getPlainName());
 		}
 		
 		return path;
@@ -216,14 +209,18 @@ public class TaskStore {
 	 * Removes a node and all its children from the tree.
 	 * @param node the node to remove
 	 */
-	public void remove(TaskTreeNode node) {
+	public void remove(DefaultMutableTreeNode node) {
 		/* TODO perhaps the node should just be marked non-existing, so that it could be removed from the file system
 		 * the next time the tree is saved (at the same time the node would be removed from memory) 
 		 */
 		if (node.isRoot()) return; /* never remove the root node */
+		
+		/* delete the file system path of the node and its children */
 		File path = this.getNodePath(node);
 		this.deleteDirectory(path);
-		node.getParent().remove(node);
+		
+		/* remove from the task tree */
+		node.removeFromParent();
 	}
 	
 	/**
@@ -253,24 +250,26 @@ public class TaskStore {
 	}
 
 	/**
-	 * Writes the given node and all its children to disk recursively.
+	 * Writes the tasks in given node and all its children to disk recursively.
 	 * @param path the path to write to
 	 * @param node the node to write out
 	 * @throws Exception on IO errors
 	 */
-	private void writeOutRecurse(File path, TaskTreeNode node) throws Exception {
-		/* DEBUG */ System.out.println("Writing out " + this.path.getPath() + ", " + node.getName() + "(" + node.isDirty() + ")");
+	private void writeOutRecurse(File path, DefaultMutableTreeNode node) throws Exception {
+		/* get the user object from the node */
+		Task task = (Task) node.getUserObject();
+		/* DEBUG */ if (task != null) System.out.println("Writing out " + this.path.getPath() + ", " + task.getName() + " (" + task.isDirty() + ")");
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
 		
 		/* write the node if not root and if dirty */
-		if (!node.isRoot() && node.isDirty()) {
+		if (!node.isRoot() && task.isDirty()) {
 			/* write the meta data */
 			File metaFile = new File(path, META_FILE);
 			try {
 				BufferedWriter writer = new BufferedWriter(new FileWriter(metaFile));
-				writer.write(node.getName() + "\n");
-				writer.write(Long.toString(node.getCreationTime()) + "\n");
+				writer.write(task.getName() + "\n");
+				writer.write(Long.toString(task.getCreationTime()) + "\n");
 				writer.close();
 			} catch (Exception e) {
 				throw new Exception("can not write to " + metaFile.getPath() + ": " + e.getMessage());
@@ -280,7 +279,7 @@ public class TaskStore {
 			File textFile = new File(path, TEXT_FILE);
 			try {
 				BufferedWriter writer = new BufferedWriter(new FileWriter(textFile));
-				if (node.getText() != null) writer.write(node.getText());
+				if (task.getText() != null) writer.write(task.getText());
 				writer.close();
 			} catch (Exception e) {
 				throw new Exception("can not write to " + textFile.getPath() + ": " + e.getMessage());
@@ -288,13 +287,13 @@ public class TaskStore {
 		}
 		
 		/* recurse for each of the child nodes */
-		Object[] children = node.getChildren();
-		for (Object o : children) {
-			TaskTreeNode child = (TaskTreeNode) o;
+		for (int i = 0; i < node.getChildCount(); i++) {
+			DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
+			Task childTask = (Task) child.getUserObject();
 			
 			/* make sure the file system name has been set for the node */
 			this.setFileSystemName(path, child);
-			File newPath = new File(path, child.getFileSystemName());
+			File newPath = new File(path, childTask.getPlainName());
 			this.writeOutRecurse(newPath, child);
 		}
 	}
@@ -302,289 +301,53 @@ public class TaskStore {
 	/**
 	 * Sets the file system name of a tree node, if it isn't set already.
 	 * @param path the file system path where the node resides
-	 * @param node the node
+	 * @param curNode the node
 	 */
 	/* TODO this can be implemented without the path parameter */
-	private void setFileSystemName(File path, TaskTreeNode node) {
+	private void setFileSystemName(File path, DefaultMutableTreeNode curNode) {
 		/* don't set for root */
-		if (node.isRoot()) return;
+		if (curNode.isRoot()) return;
 		
-		/* don't reset the name */
-		if (node.getFileSystemName() != null) return;
+		/* get the user object from the tree node */
+		Task task = (Task) curNode.getUserObject();
+		
+		/* don't set name if one already exists */
+		if (task.getPlainName() != null) return;
 
 		/* remove all silly characters from the node name and make everything lower-case */
 		/* TODO limit the file system name to something like 20 characters */
 		String name = "";
-		for (int i = 0; i < node.getName().length(); i++) {
-			char ch = node.getName().charAt(i);
+		for (int i = 0; i < task.getName().length(); i++) {
+			char ch = task.getName().charAt(i);
 			if (ch < 256 && Character.isLetterOrDigit(ch)) name = name + Character.toLowerCase(ch);
 		}
 		
-		/* if any characters were left, try the name as is */
+		/* if any characters left, try the name as is */
 		if (name.length() > 0) {
 			File newPath = new File(path, name);
 			if (!newPath.exists()) {
 				/* success */
-				node.setFileSystemName(name);
+				task.setPlainName(name);
 				return;
 			}
 		}
 		
-		/* append numbers at the end of the name until non-existing path is found; */
+		/* append numbers at the end of the name until non-existing path is found */
 		/* TODO only 100 numbers are tried at most! Do something about this. */
 		for (int i = 0; i < 100; i++) {
 			String newName = name + i;
 			File newPath = new File(path, newName);
 			if (!newPath.exists()) {
 				/* success! */
-				node.setFileSystemName(newName);
+				task.setPlainName(newName);
 				return;
 			}
 		}
 		
 		/* error, no suitable name found */
-		throw new RuntimeException("no suitable path found for " + node.getName());
+		throw new RuntimeException("no suitable path found for " + task.getName() + " in " + path.getPath());
 	}
 
-	/* TODO move this to its own file */
-	/**
-	 * Class that implements a tree node.
-	 * @author anonpds <anonpds@gmail.com>
-	 */
-	static class TaskTreeNode implements TreeNode {
-		/** Tells whether the node has changed since last write to disk. Should be set true when a node is created from
-		 * scratch and false to when a node is loaded from disk. Every change to the node should set it true. */
-		private boolean dirty;
-		
-		/** The name of the tree node. */
-		private String name;
-		
-		/** The time stamp of the node creation. */
-		private long timeStamp;
-
-		/** The list of children in this node. */
-		private Vector<TaskTreeNode> children = new Vector<TaskTreeNode>();
-
-		/** The parent of this node; null for the root node. */
-		private TaskTreeNode parent;
-
-		/** The file system name of the node. */
-		private String fsName;
-
-		/** The text of the task. */
-		private String text;
-
-		/* TODO add several constructors; most should set the node dirty */
-		/**
-		 * Constructs a new tree node.
-		 * @param fsName the file system name; set to null, unless adding tasks from file
-		 */
-		public TaskTreeNode(String fsName) {
-			this.fsName = fsName;
-			this.dirty = false;
-			this.parent = null;
-			this.name = null;
-			this.timeStamp = System.currentTimeMillis();
-			this.text = "";
-		}
-
-		/**
-		 * Tells whether this node can have children.
-		 * @return always true
-		 */
-		public boolean getAllowsChildren() {
-			return true;
-		}
-		
-		/**
-		 * Adds a new node to the tree.
-		 * @param node the node to add
-		 */
-		public void add(TaskTreeNode node) {
-			node.parent = this;
-			this.children.add(node);
-		}
-
-		/**
-		 * Removes a child from the node.
-		 * @param node the node to remove
-		 */
-		public void remove(TaskTreeNode node) {
-			this.children.remove(node);
-		}
-
-		/**
-		 * Returns the children of the node as an Enumeration.
-		 * @return the children of the node
-		 */
-		public Enumeration<TaskTreeNode> children() {
-			return this.children.elements();
-		}
-		/**
-		 * Returns the number of children this node has.
-		 * @return the number of children
-		 */
-		public int getChildCount() {
-			return this.children.size();
-		}
-
-		/**
-		 * Returns the specified child.
-		 * @param index the index of the child to return
-		 * @return the child node
-		 */
-		public TaskTreeNode getChildAt(int index) {
-			return this.children.get(index);
-		}
-		
-		/**
-		 * Returns the children of the node as an array.
-		 * @return the children array
-		 */
-		public Object[] getChildren() {
-			return this.children.toArray();
-		}
-		
-		/**
-		 * Returns the index of the specified children in the node.
-		 * @param child the child whose index to query
-		 * @return the index
-		 */
-		public int getIndex(TreeNode child) {
-			return this.children.indexOf(child);
-		}
-
-		/**
-		 * Returns the parent of this node.
-		 * @return the parent node or null if this is the root node
-		 */
-		public TaskTreeNode getParent() {
-			return this.parent;
-		}
-		
-		/**
-		 * Tells whether the node is the root node or not.
-		 * @return true if this is the root node, false if not
-		 */
-		public boolean isRoot() {
-			return this.parent == null;
-		}
-		
-		/**
-		 * Tells whether this is a leaf node or not. A leaf node does not have any children.
-		 * @return true if this is a leaf node, false if not
-		 */
-		public boolean isLeaf() {
-			return(this.getChildCount() == 0);
-		}
-
-		/**
-		 * Tells whether the node was modified since it was last written out.
-		 * @return true if the node has unsaved changes, false it not
-		 */
-		public boolean isDirty() {
-			return this.dirty;
-		}
-
-		/**
-		 * Sets the node to dirty or non-dirty. Only dirty nodes are saved to disk when the tree is written out.
-		 * @param dirty true to set the node dirty, false for non-dirty
-		 */
-		public void setDirty(boolean dirty) {
-			this.dirty = dirty;
-		}
-
-		/**
-		 * Sets the creation time of the node.
-		 * @param timeStamp the time of the node's creation
-		 */
-		public void setCreationTime(long timeStamp) {
-			this.timeStamp = timeStamp;
-		}
-		
-		/**
-		 * Returns the node creation time.
-		 * @return the creation time stamp
-		 */
-		public long getCreationTime() {
-			return this.timeStamp;
-		}
-
-		/**
-		 * Sets the name of the node.
-		 * @param name the new name of the node
-		 */
-		public void setName(String name) {
-			this.name = name;
-		}
-
-		/**
-		 * Returns the name of the node.
-		 * @return the name of the node
-		 */
-		public String getName() {
-			return this.name;
-		}
-		
-		/**
-		 * Sets the file system name of the node.
-		 * @param name the file system name
-		 */
-		public void setFileSystemName(String name) {
-			this.fsName = name;
-		}
-
-		/**
-		 * Returns the file system name of the node.
-		 * @return the file system name of the node
-		 */
-		public String getFileSystemName() {
-			return this.fsName;
-		}
-
-		/**
-		 * Returns the text of the node.
-		 * @return the text of the node
-		 */
-		public String getText() {
-			return this.text;
-		}
-
-		/**
-		 * Sets the text of the node.
-		 * @param text the text to set
-		 */
-		public void setText(String text) {
-			this.dirty = true;
-			this.text = text;
-		}
-		
-		/**
-		 * Returns the string representation of this object.
-		 * @return the string
-		 */
-		public String toString() {
-			return this.name;
-		}
-
-		/**
-		 * Creates the path from root to this node.
-		 * @return the path from the tree root to this node
-		 */
-		public TreePath getPath() {
-			/* create a vector of the bottom to top path */
-			Vector<TaskTreeNode> v = new Vector<TaskTreeNode>();
-			for (TaskTreeNode node = this; node != null; node = node.getParent()) v.add(node);
-			
-			/* reverse the path as an array of objects */
-			Object[] path = new Object[v.size()];
-			for (int i = 0; i < v.size(); i++)
-				path[i] = v.get(v.size() - i - 1);
-			
-			return new TreePath(path);
-		}
-	}
-	
 	/* DEBUG */
 	@SuppressWarnings("javadoc")
 	public void print() {
@@ -592,10 +355,11 @@ public class TaskStore {
 	}
 	/* DEBUG */
 	@SuppressWarnings("javadoc")
-	public void print(int depth, TaskTreeNode node) {
+	public void print(int depth, DefaultMutableTreeNode node) {
+		Task task = (Task) node.getUserObject();
 		for (int i = 0; i < depth; i++) System.out.print("  ");
-		System.out.println(node.getName() + ": " + node.getText());
+		if (task != null) System.out.println(task.getName() + ": " + task.getText());
 		for (int i = 0; i < node.getChildCount(); i++)
-			print(depth + 1, node.getChildAt(i));
+			print(depth + 1, (DefaultMutableTreeNode) node.getChildAt(i));
 	}
 }

@@ -21,8 +21,6 @@ import java.io.File;
 import java.text.DateFormat;
 import java.util.Date;
 
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -34,11 +32,11 @@ import javax.swing.JToolBar;
 import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-import anonpds.TaskMistress.TaskStore.TaskTreeNode;
 
 /* TODO add support for checked items; need to implement a new CellRenderer to show the additional icons. */
 
@@ -196,15 +194,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Sets the node which is currently displayed in the editor.
 	 * @param node the node to display in the editor
 	 */
-	private void setEditorNode(TaskTreeNode node) {
-		if (node != null) {
+	private void setEditorNode(DefaultMutableTreeNode node) {
+		Task task = (Task) node.getUserObject();
+		if (task != null) {
 			/* format the date for editor status bar */
-			Date date = new Date(node.getCreationTime());
+			Date date = new Date(task.getCreationTime());
 			DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
 			this.editorBar.setText("Created: " + format.format(date));
 
 			/* set the editor text and make it editable */
-			this.editor.setText(node.getText());
+			this.editor.setText(task.getText());
 			this.editor.setEditable(true);
 		} else {
 			/* no node selected; make the editor uneditable */
@@ -221,26 +220,28 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		if (name == null) return;
 		
 		TreePath path = this.treeView.getSelectionPath();
-		TaskTreeNode node = this.store.getRoot();
-		if (path != null) node = (TaskTreeNode) path.getLastPathComponent();
-		/* DEBUG */ System.out.println("Adding " + node.getName() + ", " + name);
-		TaskTreeNode newNode = this.store.addChild(node, name);
-		this.store.print();
+		DefaultMutableTreeNode node = this.store.getRoot();
+		if (path != null) node = (DefaultMutableTreeNode) path.getLastPathComponent();
+		Task task = (Task) node.getUserObject();
+		/* DEBUG */ if (task != null) System.out.println("Adding " + task.getName() + ", " + name);
+		DefaultMutableTreeNode newNode = this.store.addChild(node, name);
+		/* DEBUG */ this.store.print();
 		((DefaultTreeModel)this.treeView.getModel()).reload(node);
 		
-		TreePath newPath = newNode.getPath(); 
-		this.treeView.setSelectionPath(newPath);
-		this.treeView.expandPath(newPath);
+		TreeNode[] newPath = newNode.getPath();
+		TreePath treePath = new TreePath(newPath);
+		this.treeView.setSelectionPath(treePath);
+		this.treeView.expandPath(treePath);
 	}
 
 	private void removeButtonPressed() {
 		TreePath path = this.treeView.getSelectionPath();
 		if (path == null) return;
 
-		TaskTreeNode node = (TaskTreeNode) path.getLastPathComponent();
+		DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 		if (node.isRoot()) return;
 
-		TaskTreeNode parent = node.getParent();
+		TreeNode parent = node.getParent();
 		this.store.remove(node);
 		((DefaultTreeModel)this.treeView.getModel()).reload(parent);
 	}
@@ -304,15 +305,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* TODO track changes */
 		TreePath path = event.getOldLeadSelectionPath();
 		if (path != null) {
-			TaskTreeNode node = (TaskTreeNode) path.getLastPathComponent();
-			node.setText(this.editor.getText());
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
+			Task task = (Task) node.getUserObject();
+			if (task != null) task.setText(this.editor.getText());
 			/* TODO save the node here; it's better to save them one at a time than all at once */ 
 		}
 		
 		/* set the editor with the text of the new selection */
 		path = event.getNewLeadSelectionPath();
 		if (path != null) {
-			TaskTreeNode node = (TaskTreeNode) path.getLastPathComponent();
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 			this.setEditorNode(node);
 		}
 	}
