@@ -35,8 +35,6 @@ import javax.swing.tree.TreeNode;
  *          are huge numbers of nodes to move/save 
  */
 
-/* TODO this class should probably use a TreeModelListener, instead of storing the root node itself. */
-
 /**
  * A class that handles the storage of task trees in Task Mistress.
  * @author anonpds <anonpds@gmail.com>
@@ -228,13 +226,13 @@ public class TaskStore {
 	 * @param dest the destination node
 	 * @param node the node to move
 	 */
-	public void move(TaskTreeNode dest, TaskTreeNode node) {
+	public void move(DefaultMutableTreeNode dest, DefaultMutableTreeNode node) {
 		/* CRITICAL this will mess out the file system layout; do not use it yet! */
 		
 		/* never move root node */
 		if (node.isRoot()) return;
 		
-		node.getParent().remove(node);
+		((DefaultMutableTreeNode) node.getParent()).remove(node);
 		dest.add(node);
 	}
 	
