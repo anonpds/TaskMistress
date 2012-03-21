@@ -13,6 +13,8 @@ import javax.swing.JTextArea;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+/* TODO implement another class, TaskView, which wraps the editor and it's status message in a single component */
+
 /**
  * Class that implements an editor component for editing tasks in Task Mistress.
  * @author anonpds <anonpds@gmail.com>

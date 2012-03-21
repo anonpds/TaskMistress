@@ -71,8 +71,6 @@ public class TaskStore {
 		for (File file : files) {
 			if (file.isDirectory()) this.addTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
 		}
-		
-		/* DEBUG */ print();
 	}
 
 	/**
@@ -151,11 +149,11 @@ public class TaskStore {
 	 */
 	public DefaultMutableTreeNode addChild(DefaultMutableTreeNode parent, String name) {
 		/* TODO rename this to just add; I considered having both addChild and addSibling, but now I can't think of
-		 * a reason to have addSibling, when you can just call: addChild(node.getParent(), name)
-		 */
+		 * a reason to have addSibling, when you can just call: addChild(node.getParent(), name) */
 		Task task = new Task(name, null, "", System.currentTimeMillis(), true);
 		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
 		parent.add(node);
+		/* TODO inform the TreeModel of the change, so the caller doesn't have to */
 		return(node);
 	}
 
@@ -165,7 +163,7 @@ public class TaskStore {
 	 * @return the file system path to the node
 	 */
 	private File getNodePath(DefaultMutableTreeNode node) {
-		/* start from the task tree root directory */
+		/* start with the task tree root directory */
 		File path = this.path;
 
 		/* traverse the tree path to this node */
@@ -192,6 +190,7 @@ public class TaskStore {
 	 * Deletes a directory and all its contents recursively.
 	 * @param path the directory to delete
 	 */
+	/* TODO move this to utility class as a public static method */
 	private void deleteDirectory(File path) {
 		if (!path.isDirectory()) return;
 		File[] files = path.listFiles();
@@ -209,13 +208,15 @@ public class TaskStore {
 	 */
 	public void remove(DefaultMutableTreeNode node) {
 		/* TODO perhaps the node should just be marked non-existing, so that it could be removed from the file system
-		 * the next time the tree is saved (at the same time the node would be removed from memory) 
-		 */
+		 * the next time the tree is saved (at the same time the node would be removed from memory)
+		 * -- Nope, I think this is nonsense */
 		if (node.isRoot()) return; /* never remove the root node */
 		
 		/* delete the file system path of the node and its children */
 		File path = this.getNodePath(node);
 		this.deleteDirectory(path);
+		
+		/* TODO inform TreeModel of the change, so the caller doesn't have to */
 		
 		/* remove from the task tree */
 		node.removeFromParent();
@@ -231,6 +232,14 @@ public class TaskStore {
 		
 		/* never move root node */
 		if (node.isRoot()) return;
+
+		/* TODO how to implement this:
+		 *      - store the path of the node to move
+		 *      - move the node inside the tree and give it a new plainName
+		 *      - move the old path to the new location (plainName)
+		 * This way there is no need to delete and write data.
+		 */
+		/* TODO inform TreeModel of the change, so the caller doesn't have to */
 		
 		((DefaultMutableTreeNode) node.getParent()).remove(node);
 		dest.add(node);
@@ -346,12 +355,12 @@ public class TaskStore {
 		throw new RuntimeException("no suitable path found for " + task.getName() + " in " + path.getPath());
 	}
 
-	/* DEBUG */
+	/* TODO make this into actual debug function that outputs to some debug stream, instead of System.out */
 	@SuppressWarnings("javadoc")
 	public void print() {
 		print(0, this.getRoot());
 	}
-	/* DEBUG */
+	/* TODO make this into actual debug function that outputs to some debug stream, instead of System.out */
 	@SuppressWarnings("javadoc")
 	public void print(int depth, DefaultMutableTreeNode node) {
 		Task task = (Task) node.getUserObject();

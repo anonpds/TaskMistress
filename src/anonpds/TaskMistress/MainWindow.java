@@ -43,8 +43,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-
 /* TODO add support for checked items; need to implement a new CellRenderer to show the additional icons. */
+/* TODO save the default window size in the task tree meta data */
 
 /**
  * Implements the main window of the Task Mistress program.
@@ -67,14 +67,31 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** The TaskStore managed by this MainWindow. */
 	private TaskStore store;
 
+	/** Button that can be pressed to add a task. */
 	private JButton addButton;
+	
+	/** Button that can be used to remove tasks. */
 	private JButton removeButton;
+	
+	/** Button that saves the changed tasks to disk. */
 	private JButton saveButton;
+	
+	/** Button that opens another task tree in a new Task Mistress window. */
 	private JButton openButton;
+	
+	/** The tool bar which contains the action buttons. */
 	private JToolBar toolBar;
+	
+	/** Status bar that displays the status of program. */
 	private JLabel statusBar;
+	
+	/** Status bar that displays information about the currently edited task. */
 	private JLabel editorBar;
+	
+	/** The task editor. */
 	private TaskEditor editor;
+	
+	/** The tree view of the tasks. */
 	private JTree treeView;
 
 	/**
@@ -149,6 +166,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.toolBar.add(saveButton);
 		this.toolBar.add(openButton);
 		
+		/* set the action listeners; the same action listener is used for all buttons */
 		this.addButton.addActionListener(this);
 		this.removeButton.addActionListener(this);
 		this.saveButton.addActionListener(this);
@@ -162,11 +180,10 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.editor = new TaskEditor();
 		
 		JPanel editorPanel = new JPanel(new BorderLayout());
-		//editorPanel.setLayout(new BoxLayout(editorPanel, BoxLayout.PAGE_AXIS));
 		editorPanel.add(this.editorBar, BorderLayout.NORTH);
 		editorPanel.add(new JScrollPane(this.editor), BorderLayout.CENTER);
 		
-		/* set up the split pane that contains the task tree view and editor */
+		/* initialise the treeView */
 		this.treeView = new JTree(new DefaultTreeModel(this.store.getRoot()));
 		this.treeView.setRootVisible(false);
 		this.treeView.setShowsRootHandles(true);
@@ -181,6 +198,8 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* TODO add support for these:
 		this.treeView.setEditable(true);
 		*/
+
+		/* set up the split pane that contains the task tree view and editor */
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.treeView, editorPanel);
 		
 		/* set up the main panel and add the components*/
@@ -205,6 +224,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		Task task = (Task) node.getUserObject();
 		if (task != null) {
 			/* format the date for editor status bar */
+			/* TODO add the changed status to the status bar */
 			Date date = new Date(task.getCreationTime());
 			DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
 			this.editorBar.setText("Created: " + format.format(date));
@@ -221,44 +241,65 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.validate();
 	}
 
+	/**
+	 * Prompts the user for a task to add and adds it to the tree, as a child of the currently selected task.
+	 * Called by the tool bar button listener when the Add button has been pressed.
+	 */
 	private void addButtonPressed() {
 		/* ask the user for task name */
 		String name = JOptionPane.showInputDialog("Enter task name");
 		if (name == null) return;
 		
-		TreePath path = this.treeView.getSelectionPath();
+		/* find the currently selected task; use tree root if no task selected */
 		DefaultMutableTreeNode node = this.store.getRoot();
+		TreePath path = this.treeView.getSelectionPath();
 		if (path != null) node = (DefaultMutableTreeNode) path.getLastPathComponent();
-		Task task = (Task) node.getUserObject();
-		/* DEBUG */ if (task != null) System.out.println("Adding " + task.getName() + ", " + name);
+
+		/* add the new node and inform the treeView of the changed structure */
+		/* TODO the TreeModel business belongs to store.addChild() */
 		DefaultMutableTreeNode newNode = this.store.addChild(node, name);
-		/* DEBUG */ this.store.print();
 		((DefaultTreeModel)this.treeView.getModel()).reload(node);
-		
+
+		/* set the added task as the current selection */
 		TreeNode[] newPath = newNode.getPath();
 		TreePath treePath = new TreePath(newPath);
 		this.treeView.setSelectionPath(treePath);
-		this.treeView.expandPath(treePath);
 	}
 
+	/**
+	 * Removes the currently selected task from the task tree.
+	 * Called by the tool bar button listener when the Remove button has been pressed.
+	 */
 	private void removeButtonPressed() {
+		/* get the selection; if no selection, do nothing */
 		TreePath path = this.treeView.getSelectionPath();
 		if (path == null) return;
 
+		/* get the selected node; don't remove root node */
 		DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 		if (node.isRoot()) return;
 
+		/* remove the node */
+		/* TODO the TreeModel business belongs to store.remove */
 		TreeNode parent = node.getParent();
 		this.store.remove(node);
 		((DefaultTreeModel)this.treeView.getModel()).reload(parent);
 	}
 
+	/**
+	 * Saves the task tree to disk.
+	 * Called by the tool bar button listener when the Save button has been pressed.
+	 */
 	private void saveButtonPressed() {
-		try { this.store.writeOut(); } catch (Exception e) { /* TODO error */ }
+		try { this.store.writeOut(); } catch (Exception e) { /* TODO errors */ }
 	}
 
-	/** The Open button in the tool bar was pressed; open another task tree. */
+	/**
+	 * Opens another task tree in new Task Mistress window. 
+	 * Called by the tool bar button listener when the Open button has been pressed.
+	 */
 	private void openButtonPressed() {
+		/* show the path selection dialog and open the new Task Mistress window, if the user selected a path */
 		File path = TaskMistress.showPathDialog();
 		if (path != null) {
 			try { new TaskMistress(path); } catch (Exception e) { /* TODO error */ }
@@ -298,6 +339,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				                                          JOptionPane.ERROR_MESSAGE);
 				if (input == JOptionPane.NO_OPTION) return;
 			}
+			/* TODO save the window size in the task tree meta data */
 			this.window.close();
 		}
 	}
@@ -309,7 +351,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	@Override
 	public void valueChanged(TreeSelectionEvent event) {
 		/* save the text of the old selection */
-		/* TODO track changes */
 		TreePath path = event.getOldLeadSelectionPath();
 		if (path != null) {
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
@@ -337,87 +378,174 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		else if (event.getSource() == this.saveButton) this.saveButtonPressed();
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
 	}
-	
+
+	/**
+	 * A class that listens to the mouse events of the treeView component in the MainWindow.
+	 * @author anonpds <anonpds@gmail.com>
+	 */
 	class TreeViewMouseListener extends MouseAdapter {
+		/** The MainWindow whose treeView this listener listens to. */
 		private MainWindow window;
+		
+		/**
+		 * Constructs a new listener.
+		 * @param window the window which contains the listened treeView
+		 */
 		public TreeViewMouseListener(MainWindow window) {
 			this.window = window;
 		}
+		
+		/**
+		 * Handles the event of mouse clicks on the treeView.
+		 * @param event the mouse event
+		 */
 		@Override
 		public void mouseClicked(MouseEvent event) {
+			/* calculate the treeView row in which the click occurred */
 			int row = event.getY() / this.window.treeView.getRowHeight();
+			/* get the rectangle of the row bounds; clear selection if the click is not inside any row */
 			Rectangle r = this.window.treeView.getRowBounds(row);
 			if (r == null || !r.contains(event.getX(), event.getY())) this.window.treeView.setSelectionPath(null);
 		}
 	}
 	
+	/**
+	 * A class that handles the data transfer with drag and drop events in the treeView.
+	 * @author anonpds <anonpds@gmail.com>
+	 */
 	class TreeViewTransferHandler extends TransferHandler {
+		/** The MainWindow whose data transfer is handled. */
 		private MainWindow window;
+		
+		/**
+		 * The default constructor.
+		 * @param window the MainWindow whose data transfer to handle
+		 */
 		public TreeViewTransferHandler(MainWindow window) {
 			this.window = window;
 		}
 		
+		/**
+		 * Returns the allowed actions. Only moving of elements is currently supported.
+		 * @param c the component for which to return the allowed actions (unused)
+		 */
 		@Override
 		public int getSourceActions(JComponent c) {
 			return MOVE;
 		}
 		
+		/**
+		 * Creates a new Transferable class to allow the data transfer between source and destination of the drag
+		 * and drop event.
+		 * @param source the source component for the drag and drop event
+		 */
 		@Override
 		protected Transferable createTransferable(JComponent source) {
+			/* only allow JTree as the source */
 			if (!(source instanceof JTree)) return null;
+			
+			/* set the currently selected tree component as the transferable node */
 			JTree tree = (JTree) source;
-			/* DEBUG */ System.out.println("DnD: " + tree.getSelectionPath());
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getSelectionPath().getLastPathComponent();
+			
+			/* if no selected node, return null to indicate no transfer */
+			if (node == null) return null;
 			return new TreeNodeTransferable(node);
 		}
 		
+		/**
+		 * Finishes the drag and drop event; this is where the data gets moved.
+		 * @param source source component
+		 * @param data the data to transfew
+		 * @param action the action (move, copy, cut)
+		 */
 		@Override
 		protected void exportDone(JComponent source, Transferable data, int action) {
+			/* only handle moves of TreeNodes inside JTree */
 			if (action != MOVE || !(source instanceof JTree) || !(data instanceof TreeNodeTransferable)) return;
+
+			/* TODO handle the actual movement operation
 			JTree tree = (JTree) source;
 			DefaultMutableTreeNode node = ((TreeNodeTransferable)data).getNode();
-			Task task = (Task) node.getUserObject();
-/* DEBUG */ if (task != null) System.out.println("moving: " + task.getName() + " to " + tree.getSelectionPath());
-			/* TODO this.window.move(node, (DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent()); */
+			this.window.move(node, (DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent());
+			*/
 		}
 		
+		/**
+		 * Tells whether something can be transferred through drag and drop. Always returns true, because the filtering
+		 * is done elsewhere (createTransferable and exportDone only accept particular classes as parameters).
+		 * @return always true
+		 */
 		@Override
 		public boolean canImport(TransferSupport support) {
 			return true;
 		}
 		
+		/* TODO is this actually needed without cut&paste?
 		@Override
 		public boolean importData(TransferSupport support) {
 			return true;
 		}
+		*/
 	}
 	
-	/* TODO maybe even make this ObjectTranferable, which transfers any kind of objects? */
+	/**
+	 * Sub-class of Transferable that can transfer DefaultMutableTreeNode objects.
+	 * @author anonpds <anonpds@gmail.com>
+	 */
+	/* TODO maybe make this ObjectTranferable, which transfers any kind of objects? */
 	class TreeNodeTransferable implements Transferable {
+		/** The node to transfer. */
 		private DefaultMutableTreeNode node;
+		
+		/** The "flavours" of data accepted. */
 		private DataFlavor[] flavor;
 
+		/**
+		 * Default constructor.
+		 * @param node the node to transfer
+		 */
 		public TreeNodeTransferable(DefaultMutableTreeNode node) {
 			this.node = node;
+			/* create a list of the accepted data "flavours"; only DefaultMutableTreeNode classes are accepted */
 			this.flavor = new DataFlavor[1];
 			this.flavor[0] = new DataFlavor(DefaultMutableTreeNode.class, "DefaultMutableTreeNode");
 		}
 		
+		/**
+		 * Returns the node that is being transferred.
+		 * @return the transferred node
+		 */
 		public DefaultMutableTreeNode getNode() {
 			return this.node;
 		}
 
+		/**
+		 * Returns the transfer data of the specified "flavour".
+		 * @param flavor the flavour of the data to receive
+		 * @return the data object in the given flavour
+		 */
+		/* TODO is this actually needed? Or perhaps getNoder() should be removed and this used instead? */
 		@Override
 		public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
 			if (!this.isDataFlavorSupported(flavor)) throw new UnsupportedFlavorException(flavor);
 			return node;
 		}
 
+		/**
+		 * Returns the list of accepted data "flavours".
+		 * @return list of accepted flavours
+		 */
 		@Override
 		public DataFlavor[] getTransferDataFlavors() {
 			return this.flavor;
 		}
 
+		/**
+		 * Tells whether a particular data flavour is supported.
+		 * @param flavor the flavour to dest
+		 * @return true if the flavour is supported, false if not
+		 */
 		@Override
 		public boolean isDataFlavorSupported(DataFlavor flavor) {
 			for (int i = 0; i < this.flavor.length; i++)

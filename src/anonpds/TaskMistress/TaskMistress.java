@@ -19,7 +19,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-/* TODO add a debugger; something that outputs debug information to a debug stream, to help squash bugs... */
+/* TODO add a debugger; something that stores debug information and outputs it in case of an error */
 
 /**
  * A class that runs the TaskMistress program.

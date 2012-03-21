@@ -10,8 +10,7 @@
 package anonpds.TaskMistress;
 
 /* TODO this class should only implement the bare Task features, such as name and text. All the other features should
- * be implemented by the storage classes sub-classing this class.
- */
+ * be implemented by the storage classes sub-classing this class. */
 
 /**
  * Class that implements a task tree node.
