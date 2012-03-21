@@ -10,7 +10,12 @@
 package anonpds.TaskMistress;
 
 import java.awt.BorderLayout;
+import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -18,10 +23,12 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.util.Date;
 
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -30,6 +37,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
+import javax.swing.TransferHandler;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -166,13 +174,14 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setShowsRootHandles(true);
 		this.treeView.addTreeSelectionListener(this);
 		this.treeView.addMouseListener(new TreeViewMouseListener(this));
+		this.treeView.setDragEnabled(true);
+		this.treeView.setTransferHandler(new TreeViewTransferHandler(this));
 		/* TODO later
 		DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
 		renderer.setLeafIcon(new ImageIcon("res/note.gif"));
 		this.treeView.setCellRenderer(renderer); */
 		/* TODO add support for these:
 		this.treeView.setEditable(true);
-		this.treeView.setDragEnabled(true);
 		*/
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.treeView, editorPanel);
 		
@@ -341,6 +350,81 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			int row = event.getY() / this.window.treeView.getRowHeight();
 			Rectangle r = this.window.treeView.getRowBounds(row);
 			if (r == null || !r.contains(event.getX(), event.getY())) this.window.treeView.setSelectionPath(null);
+		}
+	}
+	
+	class TreeViewTransferHandler extends TransferHandler {
+		private MainWindow window;
+		public TreeViewTransferHandler(MainWindow window) {
+			this.window = window;
+		}
+		
+		@Override
+		public int getSourceActions(JComponent c) {
+			return MOVE;
+		}
+		
+		@Override
+		protected Transferable createTransferable(JComponent source) {
+			if (!(source instanceof JTree)) return null;
+			JTree tree = (JTree) source;
+			/* DEBUG */ System.out.println("DnD: " + tree.getSelectionPath());
+			DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getSelectionPath().getLastPathComponent();
+			return new TreeNodeTransferable(node);
+		}
+		
+		@Override
+		protected void exportDone(JComponent source, Transferable data, int action) {
+			if (action != MOVE || !(source instanceof JTree) || !(data instanceof TreeNodeTransferable)) return;
+			JTree tree = (JTree) source;
+			DefaultMutableTreeNode node = ((TreeNodeTransferable)data).getNode();
+			Task task = (Task) node.getUserObject();
+/* DEBUG */ if (task != null) System.out.println("moving: " + task.getName() + " to " + tree.getSelectionPath());
+			/* TODO this.window.move(node, (DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent()); */
+		}
+		
+		@Override
+		public boolean canImport(TransferSupport support) {
+			return true;
+		}
+		
+		@Override
+		public boolean importData(TransferSupport support) {
+			return true;
+		}
+	}
+	
+	/* TODO maybe even make this ObjectTranferable, which transfers any kind of objects? */
+	class TreeNodeTransferable implements Transferable {
+		private DefaultMutableTreeNode node;
+		private DataFlavor[] flavor;
+
+		public TreeNodeTransferable(DefaultMutableTreeNode node) {
+			this.node = node;
+			this.flavor = new DataFlavor[1];
+			this.flavor[0] = new DataFlavor(DefaultMutableTreeNode.class, "DefaultMutableTreeNode");
+		}
+		
+		public DefaultMutableTreeNode getNode() {
+			return this.node;
+		}
+
+		@Override
+		public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
+			if (!this.isDataFlavorSupported(flavor)) throw new UnsupportedFlavorException(flavor);
+			return node;
+		}
+
+		@Override
+		public DataFlavor[] getTransferDataFlavors() {
+			return this.flavor;
+		}
+
+		@Override
+		public boolean isDataFlavorSupported(DataFlavor flavor) {
+			for (int i = 0; i < this.flavor.length; i++)
+				if (this.flavor[i].equals(flavor)) return true;
+			return false;
 		}
 	}
 }
