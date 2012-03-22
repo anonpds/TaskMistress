@@ -113,9 +113,14 @@ public class TaskMistress {
 
 		/* a path is needed for the task tree root; either read it from configuration file or ask from user */
 		File path = null;
+		
+		/* the path can also be set by command line argument */
+		/* TODO add decent command line argument handling */
+		if (args.length > 0) path = new File(args[0]);
+		
 		File conf = null; /* TODO TaskMistress.getConfigFile(); -- conf. file is disabled for now */
 
-		while (path == null || !path.exists()) {
+		while (path == null) {
 			if (conf == null || !conf.exists()) {
 				/* no configuration file; query user */
 				path = TaskMistress.showPathDialog();
