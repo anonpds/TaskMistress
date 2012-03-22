@@ -112,6 +112,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.store = store;
 
 		/* set up the window */
+		this.setTitle(TaskMistress.PROGRAM_NAME + " " + TaskMistress.PROGRAM_VERSION);
 		this.addWindowListener(new MainWindowListener(this));
 		this.setSize(width, height);
 
