@@ -185,18 +185,21 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		editorPanel.add(new JScrollPane(this.editor), BorderLayout.CENTER);
 		
 		/* initialise the treeView */
-		this.treeView = new JTree(new DefaultTreeModel(this.store.getRoot()));
+		this.treeView = new JTree(this.store.getTreeModel());
 		this.treeView.setRootVisible(false);
 		this.treeView.setShowsRootHandles(true);
 		this.treeView.addTreeSelectionListener(this);
 		this.treeView.addMouseListener(new TreeViewMouseListener(this));
 		this.treeView.setDragEnabled(true);
 		this.treeView.setTransferHandler(new TreeViewTransferHandler(this));
-		/* TODO later
+		
+		/* TODO later:
 		DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
 		renderer.setLeafIcon(new ImageIcon("res/note.gif"));
-		this.treeView.setCellRenderer(renderer); */
-		/* TODO add support for these:
+		this.treeView.setCellRenderer(renderer);
+		*/
+		
+		/* TODO add support for this
 		this.treeView.setEditable(true);
 		*/
 
@@ -304,6 +307,19 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		File path = TaskMistress.showPathDialog();
 		if (path != null) {
 			try { new TaskMistress(path); } catch (Exception e) { /* TODO error */ }
+		}
+	}
+
+	/**
+	 * Moves node under another node.
+	 * @param dest the destination node
+	 * @param node the node to move
+	 */
+	public void move(DefaultMutableTreeNode dest, DefaultMutableTreeNode node) {
+		try {
+			this.store.move(dest, node);
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(this, e.getMessage(), "Cannot move node", JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -465,11 +481,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			/* only handle moves of TreeNodes inside JTree */
 			if (action != MOVE || !(source instanceof JTree) || !(data instanceof TreeNodeTransferable)) return;
 
-			/* TODO handle the actual movement operation
 			JTree tree = (JTree) source;
 			DefaultMutableTreeNode node = ((TreeNodeTransferable)data).getNode();
-			this.window.move(node, (DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent());
-			*/
+			
+			/* get the destination path; if it's null, move under root node */
+			DefaultMutableTreeNode dest = this.window.store.getRoot();
+			TreePath path = tree.getSelectionPath();
+			if (path != null) dest = (DefaultMutableTreeNode) path.getLastPathComponent();
+			
+			/* execute the move */
+			this.window.move(dest, node);
 		}
 		
 		/**
@@ -482,12 +503,14 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			return true;
 		}
 		
-		/* TODO is this actually needed without cut&paste?
+		/**
+		 * No idea what this function is actually for, but doesn't work without it.
+		 * @return always returns true
+		 */
 		@Override
 		public boolean importData(TransferSupport support) {
 			return true;
 		}
-		*/
 	}
 	
 	/**

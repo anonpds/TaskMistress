@@ -17,6 +17,7 @@ import java.io.FileWriter;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 
 /* TODO separate the TaskStore from the TaskTreeNode:
@@ -71,6 +72,14 @@ public class TaskStore {
 		for (File file : files) {
 			if (file.isDirectory()) this.addTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
 		}
+	}
+	
+	/**
+	 * Returns the tree model used by this task store.
+	 * @return the tree model
+	 */
+	public TreeModel getTreeModel() {
+		return this.treeModel;
 	}
 
 	/**
@@ -226,23 +235,31 @@ public class TaskStore {
 	 * Moves a node and all its children under another node.
 	 * @param dest the destination node
 	 * @param node the node to move
+	 * @throws Exception when the move is not possible
 	 */
-	public void move(DefaultMutableTreeNode dest, DefaultMutableTreeNode node) {
-		/* CRITICAL this will mess out the file system layout; do not use it yet! */
-		
-		/* never move root node */
-		if (node.isRoot()) return;
+	public void move(DefaultMutableTreeNode dest, DefaultMutableTreeNode node) throws Exception {
+		/* never move root node or a node unto itself or a node to its parent */
+		if (node.isRoot() || node == dest || node.getParent() == dest) return;
 
-		/* TODO how to implement this:
-		 *      - store the path of the node to move
-		 *      - move the node inside the tree and give it a new plainName
-		 *      - move the old path to the new location (plainName)
-		 * This way there is no need to delete and write data.
-		 */
-		/* TODO inform TreeModel of the change, so the caller doesn't have to */
+		/* never move a parent down into itself */
+		for (DefaultMutableTreeNode child = dest; child != null; child = (DefaultMutableTreeNode) child.getParent())
+			if (child == node) throw new Exception("Cannot move node under itself!");
+
+		/* save the file system path of the old node location */
+		File oldPath = this.getNodePath(node);
 		
-		((DefaultMutableTreeNode) node.getParent()).remove(node);
-		dest.add(node);
+		/* invalidate the file system name of the node */
+		Task oldTask = (Task) node.getUserObject();
+		oldTask.setPlainName(null);
+		
+		/* remove the node and add it under the destination node */
+		this.treeModel.removeNodeFromParent(node);
+		this.treeModel.insertNodeInto(node, dest, dest.getChildCount());
+		
+		/* update the file system: set the new file system (plain) name and move the task directory */
+		this.setFileSystemName(this.getNodePath(dest), node);
+		File newPath = this.getNodePath(node);
+		oldPath.renameTo(newPath);
 	}
 	
 	/**

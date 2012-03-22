@@ -3,7 +3,8 @@ To Do for 0.1
 
 This file contains the main tasks to get to version 0.1.
 
-  * add support for moving tasks in the tree
+Open:
+
   * add task tree meta data
     - save the tree creation time
     - save the tree format (filesystem)
@@ -18,3 +19,7 @@ This file contains the main tasks to get to version 0.1.
     - DEL: delete a task
   * write nodes out when they change; it's better to write them one at
     a time than all at once
+
+Done:
+
+  * add support for moving tasks in the tree
