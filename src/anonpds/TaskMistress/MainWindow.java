@@ -16,6 +16,8 @@ import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -188,10 +190,12 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView = new JTree(this.store.getTreeModel());
 		this.treeView.setRootVisible(false);
 		this.treeView.setShowsRootHandles(true);
+		this.treeView.setDragEnabled(true);
 		this.treeView.addTreeSelectionListener(this);
 		this.treeView.addMouseListener(new TreeViewMouseListener(this));
-		this.treeView.setDragEnabled(true);
 		this.treeView.setTransferHandler(new TreeViewTransferHandler(this));
+		this.treeView.setFocusable(true);
+		this.treeView.addKeyListener(new TreeViewKeyListener(this));
 		
 		/* TODO later:
 		DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
@@ -246,23 +250,41 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	}
 
 	/**
-	 * Prompts the user for a task to add and adds it to the tree, as a child of the currently selected task.
-	 * Called by the tool bar button listener when the Add button has been pressed.
+	 * Returns the currently selected node in the treeView. Returns the root node if no node is selected.
+	 * @return currently selected node or root if no selection
 	 */
-	private void addButtonPressed() {
-		/* ask the user for task name */
-		String name = JOptionPane.showInputDialog("Enter task name");
-		if (name == null) return;
-		
+	private DefaultMutableTreeNode getCurrentSelection() {
 		/* find the currently selected task; use tree root if no task selected */
 		DefaultMutableTreeNode node = this.store.getRoot();
 		TreePath path = this.treeView.getSelectionPath();
 		if (path != null) node = (DefaultMutableTreeNode) path.getLastPathComponent();
+		return node;
+	}
+		
+	/**
+	 * Finds the currently selected node and adds a child node to it. Called when the Add button in the tool bar is
+	 * activated.
+	 */
+	private void addButtonPressed() {
+		/* get the currently selected node and add a child task to it */
+		DefaultMutableTreeNode node = this.getCurrentSelection();
+		this.add(node);
+	}
 
+	/**
+	 * Adds task under the given task tree node. The task name is prompted from the user and the task is made active
+	 * in the treeView after it has been created.
+	 * @param parent the parent node under which to add the new tasks
+	 */
+	private void add(DefaultMutableTreeNode parent) {
+		/* ask the user for task name */
+		String name = JOptionPane.showInputDialog("Enter task name");
+		if (name == null) return;
+		
 		/* add the new node and inform the treeView of the changed structure */
 		/* TODO the TreeModel business belongs to store.addChild() */
-		DefaultMutableTreeNode newNode = this.store.addChild(node, name);
-		((DefaultTreeModel)this.treeView.getModel()).reload(node);
+		DefaultMutableTreeNode newNode = this.store.addChild(parent, name);
+		((DefaultTreeModel)this.treeView.getModel()).reload(parent);
 
 		/* set the added task as the current selection */
 		TreeNode[] newPath = newNode.getPath();
@@ -283,6 +305,14 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 		if (node.isRoot()) return;
 
+		/* make sure the user wants to remove the task and its children */
+		Task task = (Task) node.getUserObject();
+		int answer = JOptionPane.showConfirmDialog(this,
+		                                           "Remove '" + task.getName() + "' and its children?",
+		                                           "Confirm delete",
+		                                           JOptionPane.YES_NO_OPTION);
+		if (answer != JOptionPane.YES_OPTION) return;
+		
 		/* remove the node */
 		/* TODO the TreeModel business belongs to store.remove */
 		TreeNode parent = node.getParent();
@@ -575,6 +605,42 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			for (int i = 0; i < this.flavor.length; i++)
 				if (this.flavor[i].equals(flavor)) return true;
 			return false;
+		}
+	}
+	
+	/**
+	 * Listens to the key events of treeView.
+	 * @author anonpds <anonpds@gmail.com>
+	 */
+	class TreeViewKeyListener extends KeyAdapter {
+		/** The MainWindow in which the listened treeView resides. */
+		private MainWindow window;
+
+		/**
+		 * Default constructor.
+		 * @param window the MainWindow which contains the listened treeView.
+		 */
+		public TreeViewKeyListener(MainWindow window) {
+			this.window = window;
+		}
+
+		/**
+		 * Handles the event of a key being typed.
+		 * @param e the key event
+		 */
+		@Override
+		public void keyTyped(KeyEvent e) {
+			if (e.getKeyChar() == KeyEvent.VK_ENTER) {
+				/* enter pressed: add task */
+				DefaultMutableTreeNode node = this.window.getCurrentSelection();
+				
+				/* if shirt depressed, add as sibling, otherwise as a child */
+				if (e.isShiftDown()) node = (DefaultMutableTreeNode) node.getParent();
+				if (node != null) this.window.add(node);
+			} else if (e.getKeyChar() == KeyEvent.VK_DELETE) {
+				/* TODO either rename the method or split it into different ones for this and the actual button */
+				this.window.removeButtonPressed();
+			}
 		}
 	}
 }
