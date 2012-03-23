@@ -13,13 +13,14 @@ Open:
   * update the meta data format to include variable names
     - requires a simple parser
   * add configuration option for selecting the default tree
-  * additional keyboard controls for the tree view:
-    - ENTER: add child
-    - TAB: add sibling
-    - DEL: delete a task
   * write nodes out when they change; it's better to write them one at
     a time than all at once
 
 Done:
 
   * add support for moving tasks in the tree
+  * additional keyboard controls for the tree view:
+    - ENTER: add child
+    - SHIFT+ENTER: add sibling
+    - DEL: delete a task
+  
