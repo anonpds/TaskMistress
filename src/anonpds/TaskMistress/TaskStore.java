@@ -46,6 +46,9 @@ public class TaskStore {
 
 	/** The name of the file that contains task text. */
 	private static final String TEXT_FILE = "task.txt";
+
+	/** Maximum length of a plain name, that is used when saving tasks to file system. */
+	private static final int MAX_PLAIN_NAME_LEN = 12;
 	
 	/** The tree model that contains the stored task tree. */
 	private DefaultTreeModel treeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
@@ -339,12 +342,15 @@ public class TaskStore {
 		if (task.getPlainName() != null) return;
 
 		/* remove all silly characters from the node name and make everything lower-case */
-		/* TODO limit the file system name to something like 20 characters */
 		String name = "";
 		for (int i = 0; i < task.getName().length(); i++) {
 			char ch = task.getName().charAt(i);
-			if (ch < 256 && Character.isLetterOrDigit(ch)) name = name + Character.toLowerCase(ch);
+			/* only accept letters or digits in the ASCII range */
+			if (ch < 128 && Character.isLetterOrDigit(ch)) name = name + Character.toLowerCase(ch);
 		}
+		
+		/* don't allow too long plain names */
+		if (name.length() > MAX_PLAIN_NAME_LEN) name = name.substring(0, MAX_PLAIN_NAME_LEN);
 		
 		/* if any characters left, try the name as is */
 		if (name.length() > 0) {
