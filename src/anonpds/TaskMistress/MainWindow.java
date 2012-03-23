@@ -229,6 +229,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * @param node the node to display in the editor
 	 */
 	private void setEditorNode(DefaultMutableTreeNode node) {
+		/* TODO save the old selected task if it was dirtied */
 		Task task = (Task) node.getUserObject();
 		if (task != null) {
 			/* format the date for editor status bar */
@@ -282,9 +283,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		if (name == null) return;
 		
 		/* add the new node and inform the treeView of the changed structure */
-		/* TODO the TreeModel business belongs to store.addChild() */
-		DefaultMutableTreeNode newNode = this.store.addChild(parent, name);
-		((DefaultTreeModel)this.treeView.getModel()).reload(parent);
+		DefaultMutableTreeNode newNode = this.store.add(parent, name);
 
 		/* set the added task as the current selection */
 		TreeNode[] newPath = newNode.getPath();
@@ -314,10 +313,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		if (answer != JOptionPane.YES_OPTION) return;
 		
 		/* remove the node */
-		/* TODO the TreeModel business belongs to store.remove */
-		TreeNode parent = node.getParent();
 		this.store.remove(node);
-		((DefaultTreeModel)this.treeView.getModel()).reload(parent);
 	}
 
 	/**

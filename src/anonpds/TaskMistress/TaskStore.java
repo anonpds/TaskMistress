@@ -91,6 +91,7 @@ public class TaskStore {
 	 * @param path the directory path to add
 	 * @throws Exception on any IO or parse errors
 	 */
+	/* TODO rename this to something more reasonable; just "loadTask" ? */
 	private void addTaskDirectory(DefaultMutableTreeNode tree, File path) throws Exception {
 		/* must be a directory */
 		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
@@ -159,13 +160,10 @@ public class TaskStore {
 	 * @param name the name of the new node to add
 	 * @return the added node
 	 */
-	public DefaultMutableTreeNode addChild(DefaultMutableTreeNode parent, String name) {
-		/* TODO rename this to just add; I considered having both addChild and addSibling, but now I can't think of
-		 * a reason to have addSibling, when you can just call: addChild(node.getParent(), name) */
+	public DefaultMutableTreeNode add(DefaultMutableTreeNode parent, String name) {
 		Task task = new Task(name, null, "", System.currentTimeMillis(), true);
 		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
-		parent.add(node);
-		/* TODO inform the TreeModel of the change, so the caller doesn't have to */
+		this.treeModel.insertNodeInto(node, parent, parent.getChildCount());
 		return(node);
 	}
 
@@ -219,19 +217,14 @@ public class TaskStore {
 	 * @param node the node to remove
 	 */
 	public void remove(DefaultMutableTreeNode node) {
-		/* TODO perhaps the node should just be marked non-existing, so that it could be removed from the file system
-		 * the next time the tree is saved (at the same time the node would be removed from memory)
-		 * -- Nope, I think this is nonsense */
 		if (node.isRoot()) return; /* never remove the root node */
 		
 		/* delete the file system path of the node and its children */
 		File path = this.getNodePath(node);
 		this.deleteDirectory(path);
-		
-		/* TODO inform TreeModel of the change, so the caller doesn't have to */
-		
-		/* remove from the task tree */
-		node.removeFromParent();
+
+		/* remove the node from the tree */
+		this.treeModel.removeNodeFromParent(node);
 	}
 	
 	/**
