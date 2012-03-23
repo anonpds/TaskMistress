@@ -41,7 +41,6 @@ import javax.swing.TransferHandler;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
@@ -229,6 +228,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * @param node the node to display in the editor
 	 */
 	private void setEditorNode(DefaultMutableTreeNode node) {
+		/* TODO the editor should know which task it is editing; then there's no need to set the text manually */
 		/* TODO save the old selected task if it was dirtied */
 		Task task = (Task) node.getUserObject();
 		if (task != null) {
