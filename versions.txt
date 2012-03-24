@@ -1,0 +1,11 @@
+Versions
+========
+
+0.0a:
+
+  * added window title to the main window
+  * added support for selecting the working directory through command line
+
+0.0:
+
+  * Initial version
