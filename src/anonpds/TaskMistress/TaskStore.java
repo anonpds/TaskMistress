@@ -257,7 +257,10 @@ public class TaskStore {
 		File newPath = this.getNodePath(node);
 		oldPath.renameTo(newPath);
 	}
-	
+
+	/* CRITICAL implement a function that writes just a single task to the disk; important for saving the status
+	 * of tasks right after they have changed
+	 */
 	/**
 	 * Writes the tasks to disk. 
 	 * @throws Exception on any error
@@ -296,6 +299,7 @@ public class TaskStore {
 			}
 			
 			/* write the task text, if any */
+			/* TODO tasks should know how to write themselves? */
 			File textFile = new File(path, TEXT_FILE);
 			try {
 				BufferedWriter writer = new BufferedWriter(new FileWriter(textFile));
@@ -304,6 +308,9 @@ public class TaskStore {
 			} catch (Exception e) {
 				throw new Exception("can not write to " + textFile.getPath() + ": " + e.getMessage());
 			}
+			
+			/* clear the dirty flag */
+			task.setDirty(false);
 		}
 		
 		/* recurse for each of the child nodes */
