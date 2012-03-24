@@ -22,8 +22,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
-import java.text.DateFormat;
-import java.util.Date;
 
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -31,7 +29,6 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
@@ -85,11 +82,8 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Status bar that displays the status of program. */
 	private JLabel statusBar;
 	
-	/** Status bar that displays information about the currently edited task. */
-	private JLabel editorBar;
-	
-	/** The task editor. */
-	private TaskEditor editor;
+	/** The task view. */
+	private TaskView taskView;
 	
 	/** The tree view of the tasks. */
 	private JTree treeView;
@@ -121,15 +115,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	}
 
 	/**
-	 * Immediately closes the main window without saving the tasks. This should be called once the user has decides to
+	 * Immediately closes the main window without saving the tasks. This should be called once the user has decided to
 	 * close the window and the tasks have already been saved (or the user has chosen not to save them).
 	 */
-	public void close() {
-		this.setVisible(false);
-		this.dispose();
-		
+	public void closeImmediately() {
 		/* make sure the task store is collected */
 		this.store = null;
+
+		/* dispose of the window */
+		this.setVisible(false);
+		this.dispose();
 	}
 
 	/**
@@ -144,11 +139,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 *     <li>JSplitPane: split pane that with the following components 
 	 *     <ul>
 	 *       <li>taskTree: the tree view of the tasks</li>
-	 *       <li>editorPane: JPanel that contains the following components in BoxLayout
-	 *       <ul>
-	 *         <li>editorBar: the editor status bar</li>
-	 *         <li>editor: the task editor</li>
-	 *       </ul></li>
+	 *       <li>taskView: TaskView component that displays the currently selected task</li>
 	 *     </ul></li>
 	 *   </ul>
 	 */
@@ -176,14 +167,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* set up the status bar */
 		this.statusBar = new JLabel("");
 		
-		/* set up the JPanel that contains the editor and its status bar */
-		this.editorBar = new JLabel("No task selected");
-		this.editor = new TaskEditor();
-		
-		JPanel editorPanel = new JPanel(new BorderLayout());
-		editorPanel.add(this.editorBar, BorderLayout.NORTH);
-		editorPanel.add(new JScrollPane(this.editor), BorderLayout.CENTER);
-		
 		/* initialise the treeView */
 		this.treeView = new JTree(new DefaultTreeModel(this.store.getRoot()));
 		this.treeView.setRootVisible(false);
@@ -200,8 +183,11 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setEditable(true);
 		*/
 
+		/* initialize the TaskView */
+		this.taskView = new TaskView();
+		
 		/* set up the split pane that contains the task tree view and editor */
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.treeView, editorPanel);
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.treeView, this.taskView);
 		
 		/* set up the main panel and add the components*/
 		JPanel mainPanel = new JPanel(new BorderLayout());
@@ -215,31 +201,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 
 		/* adjust the split between task tree view and task editor */
 		splitPane.setDividerLocation(0.30);
-	}
-
-	/**
-	 * Sets the node which is currently displayed in the editor.
-	 * @param node the node to display in the editor
-	 */
-	private void setEditorNode(DefaultMutableTreeNode node) {
-		Task task = (Task) node.getUserObject();
-		if (task != null) {
-			/* format the date for editor status bar */
-			/* TODO add the changed status to the status bar */
-			Date date = new Date(task.getCreationTime());
-			DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
-			this.editorBar.setText("Created: " + format.format(date));
-
-			/* set the editor text and make it editable */
-			this.editor.setText(task.getText());
-			this.editor.setEditable(true);
-		} else {
-			/* no node selected; make the editor uneditable */
-			this.editorBar.setText("No task selected");
-			this.editor.setText("");
-			this.editor.setEditable(false);
-		}
-		this.validate();
 	}
 
 	/**
@@ -329,6 +290,10 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		 */
 		@Override
 		public void windowClosing(WindowEvent event) {
+			/* update the currently open task */
+			if (this.window.taskView.getTask() != null) this.window.taskView.updateText();
+			
+			/* write the data */
 			try {
 				this.window.store.writeOut();
 			} catch (Exception e) {
@@ -341,7 +306,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				if (input == JOptionPane.NO_OPTION) return;
 			}
 			/* TODO save the window size in the task tree meta data */
-			this.window.close();
+			this.window.closeImmediately();
 		}
 	}
 
@@ -356,15 +321,17 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		if (path != null) {
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 			Task task = (Task) node.getUserObject();
-			if (task != null) task.setText(this.editor.getText());
-			/* TODO save the node here; it's better to save them one at a time than all at once */ 
+			if (task != null) this.taskView.updateText();
+			/* CRITICAL save the node here; it's better to save them one at a time than all at once */
+			/* TODO just a temporary solution */
+			if (task.isDirty()) try { this.store.writeOut(); } catch (Exception e) { /* TODO error */ }
 		}
 		
-		/* set the editor with the text of the new selection */
+		/* set the taskView with the Task of the new selection */
 		path = event.getNewLeadSelectionPath();
 		if (path != null) {
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-			this.setEditorNode(node);
+			this.taskView.setTask((Task) node.getUserObject());
 		}
 	}
 
@@ -457,7 +424,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/**
 		 * Finishes the drag and drop event; this is where the data gets moved.
 		 * @param source source component
-		 * @param data the data to transfew
+		 * @param data the data to transfer
 		 * @param action the action (move, copy, cut)
 		 */
 		@Override

@@ -1,6 +1,13 @@
 Versions
 ========
 
+0.0b:
+
+  * moved the task display code from MainWindow to new TaskView component
+  * changes to task text are now shown on the task status line
+  * fix: Tasks left open in the editor are now correctly saved
+  * fix: only Tasks that have actually changed are saved
+
 0.0a:
 
   * added window title to the main window

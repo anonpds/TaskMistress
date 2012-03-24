@@ -10,8 +10,6 @@
 package anonpds.TaskMistress;
 
 import javax.swing.JTextArea;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 
 /* TODO implement another class, TaskView, which wraps the editor and it's status message in a single component */
 
@@ -20,10 +18,7 @@ import javax.swing.event.DocumentListener;
  * @author anonpds <anonpds@gmail.com>
  */
 @SuppressWarnings("serial")
-public class TaskEditor extends JTextArea implements DocumentListener {
-	/** Tells whether the editor has changed since it was intialised. */
-	private boolean changed;
-
+public class TaskEditor extends JTextArea {
 	/** Default constructor. */
 	public TaskEditor() {
 		/* enable word wrapping */
@@ -32,12 +27,6 @@ public class TaskEditor extends JTextArea implements DocumentListener {
 		
 		/* disable editing by default */
 		this.close(null);
-		
-		/* add listener for text changes */
-		this.getDocument().addDocumentListener(this);
-		
-		/* no changes */
-		this.changed = false;
 	}
 
 	/**
@@ -49,21 +38,12 @@ public class TaskEditor extends JTextArea implements DocumentListener {
 	}
 
 	/**
-	 * Tells whether the editor has changed since initialisation.
-	 * @return true if the editor has changed, false if not
-	 */
-	public boolean hasChanged() {
-		return this.changed;
-	}
-	
-	/**
 	 * Opens the editor by setting the initial text and making the text editable.
 	 * @param text the initial text of the editor
 	 */
 	public void open(String text) {
 		super.setText(text);
 		this.setEditable(true);
-		this.changed = false;
 	}
 	
 	/**
@@ -73,33 +53,5 @@ public class TaskEditor extends JTextArea implements DocumentListener {
 	public void close(String text) {
 		if (text != null) this.setText(text);
 		this.setEditable(false);
-		this.changed = false;
-	}
-
-	/**
-	 * Listens to text changes in the editor.
-	 * @param e the change event
-	 */
-	@Override
-	public void changedUpdate(DocumentEvent e) {
-		this.changed = true;
-	}
-
-	/**
-	 * Listens to text inserts in the editor.
-	 * @param e the change event
-	 */
-	@Override
-	public void insertUpdate(DocumentEvent e) {
-		this.changed = true;
-	}
-
-	/**
-	 * Listens to text removals in the editor.
-	 * @param e the change event
-	 */
-	@Override
-	public void removeUpdate(DocumentEvent e) {
-		this.changed = true;
 	}
 }
