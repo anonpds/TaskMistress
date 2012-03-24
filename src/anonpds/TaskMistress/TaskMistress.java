@@ -36,7 +36,7 @@ public class TaskMistress {
 	public static final String PROGRAM_NAME = "Task Mistress";
 
 	/** The current version of the program. */
-	public static final String PROGRAM_VERSION = "0.0b";
+	public static final String PROGRAM_VERSION = "0.0c";
 
 	/**
 	 * Launches an instance of the program at the given file system path.
