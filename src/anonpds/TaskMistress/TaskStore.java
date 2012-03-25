@@ -9,11 +9,7 @@
 
 package anonpds.TaskMistress;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -25,12 +21,6 @@ import javax.swing.tree.TreeNode;
  * @author anonpds <anonpds@gmail.com>
  */
 public class TaskStore {
-	/** The name of the file that contains task meta data. */
-	private static final String META_FILE = "meta.txt";
-
-	/** The name of the file that contains task text. */
-	private static final String TEXT_FILE = "task.txt";
-
 	/** Maximum length of a plain name, that is used when saving tasks to file system. */
 	private static final int MAX_PLAIN_NAME_LEN = 12;
 	
@@ -79,53 +69,19 @@ public class TaskStore {
 		/* must be a directory */
 		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
 
-		/* the directory must contain the meta data file; skip the directory if doesn't exist */
-		File metaFile = new File(path, META_FILE);
-		if (!metaFile.exists()) return;
-
-		/* TODO let the Task itself read the data */
-		/* read the meta data */
-		String name = null, date = null;
-		try {
-			BufferedReader reader = new BufferedReader(new FileReader(metaFile));
-			name = reader.readLine();
-			date = reader.readLine();
-			reader.close();
-		} catch (Exception e) {
-			throw new Exception("can not access '" + metaFile.getPath() + "': " + e.getMessage());
-		}
-
-		/* validate and parse the meta data */
-		if (name == null) throw new Exception("no name in metadata " + metaFile.getPath());
-		if (date == null) throw new Exception("no date in metadata " + metaFile.getPath());
-		long timeStamp = Long.parseLong(date);
-		
-		/* read the task text if it exists */
-		File textFile = new File(path, TEXT_FILE);
-		String text = "";
-		if (textFile.exists()) {
-			try {
-				String line;
-				BufferedReader reader = new BufferedReader(new FileReader(textFile));
-				while ((line = reader.readLine()) != null) {
-					if (text.length() > 0) text = text + "\n";
-					text = text + line;
-				}
-				reader.close();
-			} catch (Exception e) { /* TODO error handling */ }
-		}
-
 		/* create the task from the read data */
-		Task task = new Task(name, path.getName(), text, timeStamp, false);
+		Task task = FileSystemTask.load(path);
 		
 		/* add the node to the tree */
-		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
-		tree.add(node);
-		
-		/* finally recurse into any potential sub-directories */
-		File[] files = path.listFiles();
-		for (File file : files) {
-			if (file.isDirectory()) this.loadTaskDirectory(node, file);
+		if (task != null) {
+			DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
+			tree.add(node);
+
+			/* finally recurse into any potential sub-directories */
+			File[] files = path.listFiles();
+			for (File file : files) {
+				if (file.isDirectory()) this.loadTaskDirectory(node, file);
+			}
 		}
 	}
 	
@@ -144,7 +100,7 @@ public class TaskStore {
 	 * @return the added node
 	 */
 	public DefaultMutableTreeNode add(DefaultMutableTreeNode parent, String name) {
-		Task task = new Task(name, null, "", System.currentTimeMillis(), true);
+		Task task = new FileSystemTask(name, "", System.currentTimeMillis(), true, null);
 		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
 		this.treeModel.insertNodeInto(node, parent, parent.getChildCount());
 		return(node);
@@ -169,11 +125,11 @@ public class TaskStore {
 			Task task = (Task) curNode.getUserObject();
 			
 			/* get the file system (plain) name of the task; create it, if it's not set */
-			String curPath = task.getPlainName();
+			String curPath = ((FileSystemTask)task).getPlainName();
 			if (curPath == null) this.setFileSystemName(curNode);
 			
 			/* add the task directory to path */
-			path = new File(path, task.getPlainName());
+			path = new File(path, ((FileSystemTask)task).getPlainName());
 		}
 		
 		return path;
@@ -183,6 +139,7 @@ public class TaskStore {
 	 * Deletes a directory and all its contents recursively.
 	 * @param path the directory to delete
 	 */
+	/* CRITICAL this should only delete the task files; there may be other files in the directory! */
 	/* TODO move this to utility class as a public static method */
 	private void deleteDirectory(File path) {
 		if (!path.isDirectory()) return;
@@ -229,7 +186,7 @@ public class TaskStore {
 		
 		/* invalidate the file system name of the node */
 		Task oldTask = (Task) node.getUserObject();
-		oldTask.setPlainName(null);
+		((FileSystemTask)oldTask).setPlainName(null);
 		
 		/* remove the node and add it under the destination node */
 		this.treeModel.removeNodeFromParent(node);
@@ -270,36 +227,8 @@ public class TaskStore {
 		/* get the user object from the node */
 		Task task = (Task) node.getUserObject();
 
-		/* create the path if it doesn't exist */
-		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
-		
-		/* write the node if not root and if dirty */
-		if (!node.isRoot() && task.isDirty()) {
-			/* write the meta data */
-			File metaFile = new File(path, META_FILE);
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(metaFile));
-				writer.write(task.getName() + "\n");
-				writer.write(Long.toString(task.getCreationTime()) + "\n");
-				writer.close();
-			} catch (Exception e) {
-				throw new Exception("can not write to " + metaFile.getPath() + ": " + e.getMessage());
-			}
-			
-			/* write the task text, if any */
-			/* TODO tasks should know how to write themselves? */
-			File textFile = new File(path, TEXT_FILE);
-			try {
-				BufferedWriter writer = new BufferedWriter(new FileWriter(textFile));
-				if (task.getText() != null) writer.write(task.getText());
-				writer.close();
-			} catch (Exception e) {
-				throw new Exception("can not write to " + textFile.getPath() + ": " + e.getMessage());
-			}
-			
-			/* clear the dirty flag */
-			task.setDirty(false);
-		}
+		/* Don't save the root node */
+		if (!node.isRoot())	((FileSystemTask)task).save(path);
 		
 		/* recurse for each of the child nodes */
 		for (int i = 0; i < node.getChildCount(); i++) {
@@ -308,7 +237,7 @@ public class TaskStore {
 			
 			/* make sure the file system name has been set for the node */
 			this.setFileSystemName(child);
-			File newPath = new File(path, childTask.getPlainName());
+			File newPath = new File(path, ((FileSystemTask)childTask).getPlainName());
 			this.writeOutRecurse(newPath, child);
 		}
 	}
@@ -326,7 +255,7 @@ public class TaskStore {
 		Task task = (Task) curNode.getUserObject();
 
 		/* don't set name if one already exists */
-		if (task.getPlainName() != null) return;
+		if (((FileSystemTask)task).getPlainName() != null) return;
 
 		/* the parent path under which this node will be written */
 		File path = this.getNodePath((DefaultMutableTreeNode) curNode.getParent());
@@ -347,7 +276,7 @@ public class TaskStore {
 			File newPath = new File(path, name);
 			if (!newPath.exists()) {
 				/* success */
-				task.setPlainName(name);
+				((FileSystemTask)task).setPlainName(name);
 				return;
 			}
 		}
@@ -359,7 +288,7 @@ public class TaskStore {
 			File newPath = new File(path, newName);
 			if (!newPath.exists()) {
 				/* success! */
-				task.setPlainName(newName);
+				((FileSystemTask)task).setPlainName(newName);
 				return;
 			}
 		}
