@@ -362,7 +362,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 			Task task = (Task) node.getUserObject();
 			if (task != null) this.taskView.updateText();
-			/* CRITICAL save the node here; it's better to save them one at a time than all at once */
 			/* TODO just a temporary solution */
 			if (task.isDirty()) try { this.store.writeOut(); } catch (Exception e) { /* TODO error */ }
 		}
@@ -508,7 +507,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Sub-class of Transferable that can transfer DefaultMutableTreeNode objects.
 	 * @author anonpds <anonpds@gmail.com>
 	 */
-	/* TODO maybe make this ObjectTranferable, which transfers any kind of objects? */
 	class TreeNodeTransferable implements Transferable {
 		/** The node to transfer. */
 		private DefaultMutableTreeNode node;

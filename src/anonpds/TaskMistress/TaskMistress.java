@@ -19,7 +19,10 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-/* TODO add a debugger; something that stores debug information and outputs it in case of an error */
+/* CRITICAL add a debugger; something that stores debug information and outputs it in case of an error */
+/* CRITICAL use the Configuration class for the meta data. Add some meta data. Convert the old meta.txt to new
+ * meta.conf; remove the convert functionality as soon as you've used it to convert your own task trees
+ */
 
 /**
  * A class that runs the TaskMistress program.
@@ -44,7 +47,6 @@ public class TaskMistress {
 	 * @throws Exception when the TaskStore cannot be initialised
 	 */
 	public TaskMistress(File path) throws Exception {
-		/* DEBUG */ System.out.println("Running " + PROGRAM_NAME + " " + PROGRAM_VERSION +  " at " + path.getPath());
 		TaskStore store = new TaskStore(path);
 		new MainWindow(store);
 	}
@@ -77,6 +79,7 @@ public class TaskMistress {
 	 */
 	@SuppressWarnings("unused")
 	private static File getConfigFile() {
+		/* TODO add a debug message for the config file */
 		File path = null;
 		
 		/* array of tried env. variables and paths that are appended to them */
@@ -90,7 +93,6 @@ public class TaskMistress {
 				break;
 			}
 		}
-		/* TODO an error should be given if neither XDG_CONFIG_HOME, HOME nor APPDATA env. variables exist. */
 		
 		/* if one of the environment variables existed, append the config file directory and name to it*/
 		if (path != null) {
@@ -109,7 +111,12 @@ public class TaskMistress {
 		/* set native look and feel if possible */
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) { /* TODO add error reporting */ }
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null,
+			                              "Could not set native look and feel; using the default.",
+			                              "Error!",
+			                              JOptionPane.ERROR_MESSAGE);
+		}
 
 		/* a path is needed for the task tree root; either read it from configuration file or ask from user */
 		File path = null;

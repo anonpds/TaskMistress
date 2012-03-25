@@ -122,11 +122,11 @@ public class Configuration {
 	 */
 	public void store(File file) throws Exception {
 		PrintStream stream = new PrintStream(file);
-		/* TODO this isn't quite safe, is it? If there's an exception, the stream will not be closed */
 		try {
 			this.store(new PrintStream(file));
+		} finally {
 			stream.close();
-		} catch (Exception e) { throw e; }
+		}
 	}
 		
 	/**
@@ -262,7 +262,6 @@ public class Configuration {
 		 * @throws Exception on parse error
 		 */
 		public static Token readToken(StringBuffer text) throws Exception {
-			/* TODO what to do if there are line feeds in the text? */
 			Token token = new Token();
 
 			/* find the first non-whitespace character */
@@ -343,7 +342,16 @@ public class Configuration {
 		
 		/**
 		 * "Flattens" a string that may contain escaped characters by replacing the escape sequences with the
-		 * characters they represent. 
+		 * characters they represent. The following escape characters are translated:
+		 * 
+		 * <ul>
+		 *   <li>\n: new line</li>
+		 *   <li>\\: backslash</li>
+		 *   <li>\": double quote</li>
+		 * </ul>
+		 * 
+		 * For all other backslash + character sequences, the backslash is simply removed.
+		 * 
 		 * @param string the string to flatten
 		 * @return the flattened string
 		 */
@@ -354,7 +362,6 @@ public class Configuration {
 				else {
 					i++;
 					/* escape character */
-					/* TODO write down this escape character handling somewhere */ 
 					switch (string.charAt(i)) {
 					case 'n': result.append('\n'); break;
 					case '"': result.append('"'); break;

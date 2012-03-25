@@ -20,22 +20,6 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 
-/* TODO separate the TaskStore from the TaskTreeNode:
- *      this is essential to allow different methods of storing the nodes on disk (for example as XML).
- *      There should be a general TaskTreeNode structure that only contains the node data. The class can then be
- *      overwritten by different TaskStore modules to include the information that is relevant to those classes. 
- */
-
-/* TODO how to fix movement of nodes:
- *      first: the fs names of moved nodes need to be set to null, since they may no longer be valid
- *      second: the old node folders need to be removed or moved (the latter is probably more complex)
- *        - this could be implemented by first adding the exist/not-exist flag to nodes, and then actually making
- *          a copy of the moved nodes, instead of really moving them; the old nodes would be marked non-existent
- *          and would thus be removed from the file system the next time the nodes are saved
- *        - the above way is quite inefficient, but it should do for now -- it will not be a problem, unless there
- *          are huge numbers of nodes to move/save 
- */
-
 /**
  * A class that handles the storage of task trees in Task Mistress.
  * @author anonpds <anonpds@gmail.com>
@@ -73,7 +57,7 @@ public class TaskStore {
 		 */
 		File[] files = this.path.listFiles();
 		for (File file : files) {
-			if (file.isDirectory()) this.addTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
+			if (file.isDirectory()) this.loadTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
 		}
 	}
 	
@@ -91,8 +75,7 @@ public class TaskStore {
 	 * @param path the directory path to add
 	 * @throws Exception on any IO or parse errors
 	 */
-	/* TODO rename this to something more reasonable; just "loadTask" ? */
-	private void addTaskDirectory(DefaultMutableTreeNode tree, File path) throws Exception {
+	private void loadTaskDirectory(DefaultMutableTreeNode tree, File path) throws Exception {
 		/* must be a directory */
 		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
 
@@ -100,8 +83,8 @@ public class TaskStore {
 		File metaFile = new File(path, META_FILE);
 		if (!metaFile.exists()) return;
 
+		/* TODO let the Task itself read the data */
 		/* read the meta data */
-		/* TODO implement a better way to handle the meta data */
 		String name = null, date = null;
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(metaFile));
@@ -142,7 +125,7 @@ public class TaskStore {
 		/* finally recurse into any potential sub-directories */
 		File[] files = path.listFiles();
 		for (File file : files) {
-			if (file.isDirectory()) this.addTaskDirectory(node, file);
+			if (file.isDirectory()) this.loadTaskDirectory(node, file);
 		}
 	}
 	
@@ -187,7 +170,7 @@ public class TaskStore {
 			
 			/* get the file system (plain) name of the task; create it, if it's not set */
 			String curPath = task.getPlainName();
-			if (curPath == null) this.setFileSystemName(path, curNode);
+			if (curPath == null) this.setFileSystemName(curNode);
 			
 			/* add the task directory to path */
 			path = new File(path, task.getPlainName());
@@ -253,9 +236,8 @@ public class TaskStore {
 		this.treeModel.insertNodeInto(node, dest, dest.getChildCount());
 		
 		/* update the file system: set the new file system (plain) name and move the task directory */
-		this.setFileSystemName(this.getNodePath(dest), node);
-		File newPath = this.getNodePath(node);
-		oldPath.renameTo(newPath);
+		this.setFileSystemName(node);
+		oldPath.renameTo(this.getNodePath(node));
 	}
 
 	/* CRITICAL implement a function that writes just a single task to the disk; important for saving the status
@@ -266,9 +248,15 @@ public class TaskStore {
 	 * @throws Exception on any error
 	 */
 	public void writeOut() throws Exception {
-		/* TODO add a version of this that takes the root path as a parameter; useful for when there is an error
-		 * saving to the path set in the class instance, so the tree can be saved to another location
-		 */
+		this.writeOut(this.path);
+	}
+	
+	/**
+	 * Writes the tasks to disk to a specified directory instead of the default.
+	 * @param path the directory path to write the tasks to
+	 * @throws Exception on any error
+	 */
+	public void writeOut(File path) throws Exception {
 		this.writeOutRecurse(this.path, this.getRoot());
 	}
 
@@ -281,7 +269,7 @@ public class TaskStore {
 	private void writeOutRecurse(File path, DefaultMutableTreeNode node) throws Exception {
 		/* get the user object from the node */
 		Task task = (Task) node.getUserObject();
-		/* DEBUG */ if (task != null) System.out.println("Writing out " + this.path.getPath() + ", " + task.getName() + " (" + task.isDirty() + ")");
+
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
 		
@@ -319,7 +307,7 @@ public class TaskStore {
 			Task childTask = (Task) child.getUserObject();
 			
 			/* make sure the file system name has been set for the node */
-			this.setFileSystemName(path, child);
+			this.setFileSystemName(child);
 			File newPath = new File(path, childTask.getPlainName());
 			this.writeOutRecurse(newPath, child);
 		}
@@ -330,17 +318,19 @@ public class TaskStore {
 	 * @param path the file system path where the node resides
 	 * @param curNode the node
 	 */
-	/* TODO this can be implemented without the path parameter */
-	private void setFileSystemName(File path, DefaultMutableTreeNode curNode) {
+	private void setFileSystemName(DefaultMutableTreeNode curNode) {
 		/* don't set for root */
 		if (curNode.isRoot()) return;
 		
 		/* get the user object from the tree node */
 		Task task = (Task) curNode.getUserObject();
-		
+
 		/* don't set name if one already exists */
 		if (task.getPlainName() != null) return;
 
+		/* the parent path under which this node will be written */
+		File path = this.getNodePath((DefaultMutableTreeNode) curNode.getParent());
+		
 		/* remove all silly characters from the node name and make everything lower-case */
 		String name = "";
 		for (int i = 0; i < task.getName().length(); i++) {

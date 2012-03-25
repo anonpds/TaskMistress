@@ -65,17 +65,6 @@ class Task {
 	}
 
 	/**
-	 * Sets the creation time of the node.
-	 * @param timeStamp the time of the node's creation
-	 */
-	/* TODO remove this? The creation time should be immutable
-	public void setCreationTime(long timeStamp) {
-		this.timeStamp = timeStamp;
-		this.dirty = true;
-	}
-	*/
-	
-	/**
 	 * Returns the node creation time.
 	 * @return the creation time stamp
 	 */
