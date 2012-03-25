@@ -40,6 +40,46 @@ public class Configuration {
 	public boolean add(String name, String value) {
 		return this.map.put(name, value) != null;
 	}
+
+	/**
+	 * Adds an integer variable to the list of configuration variables.
+	 * @param name the name of the variable
+	 * @param value the value of the variable
+	 * @return true if a variable with the same name already existed and was overwritten, false if a variable was added
+	 */
+	public boolean add(String name, int value) {
+		return this.map.put(name, Integer.toString(value)) != null;
+	}
+	
+	/**
+	 * Adds a long integer variable to the list of configuration variables.
+	 * @param name the name of the variable
+	 * @param value the value of the variable
+	 * @return true if a variable with the same name already existed and was overwritten, false if a variable was added
+	 */
+	public boolean add(String name, long value) {
+		return this.map.put(name, Long.toString(value)) != null;
+	}
+	
+	/**
+	 * Adds a floating point variable to the list of configuration variables.
+	 * @param name the name of the variable
+	 * @param value the value of the variable
+	 * @return true if a variable with the same name already existed and was overwritten, false if a variable was added
+	 */
+	public boolean add(String name, float value) {
+		return this.map.put(name, Float.toString(value)) != null;
+	}
+	
+	/**
+	 * Adds a long floating point variable to the list of configuration variables.
+	 * @param name the name of the variable
+	 * @param value the value of the variable
+	 * @return true if a variable with the same name already existed and was overwritten, false if a variable was added
+	 */
+	public boolean add(String name, double value) {
+		return this.map.put(name, Double.toString(value)) != null;
+	}
 	
 	/**
 	 * Returns the value of the named variable.
@@ -111,6 +151,7 @@ public class Configuration {
 			/* add the read parameter to the configuration */
 			conf.add(name, value);
 		}
+		reader.close();
 		
 		return conf;
 	}

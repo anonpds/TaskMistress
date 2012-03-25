@@ -21,8 +21,13 @@ import java.io.PrintWriter;
  * @author anonpds <anonpds@gmail.com>
  */
 public class FileSystemTask extends Task {
-	/** The name of the file that contains task meta data. */
+	private static final String CONFIG_NAME = "name";
+	private static final String CONFIG_CREATION_TIME = "creation_time";
+	/** The name of the file that contains task meta data (old format). */
 	private static final String OLD_META_FILE = "meta.txt";
+
+	/** The name of the file that contains task meta data. */
+	private static final String META_FILE = "task.cfg";
 
 	/** The name of the file that contains task text. */
 	private static final String TEXT_FILE = "task.txt";
@@ -65,19 +70,30 @@ public class FileSystemTask extends Task {
 		String plainName = path.getName();
 		task.setPlainName(plainName);
 
-		/* the directory must contain the meta data file; skip the directory if doesn't exist */
+		/* load the old meta file if it exists, otherwise use the new file; skip the path if neither exist */
+		/* TODO remove the support for the old meta file at some point */
 		File metaFile = new File(path, OLD_META_FILE);
-		if (!metaFile.exists()) return null;
-
-		/* read the meta data */
 		String name = null, date = null;
-		try {
-			BufferedReader reader = new BufferedReader(new FileReader(metaFile));
-			name = reader.readLine();
-			date = reader.readLine();
-			reader.close();
-		} catch (Exception e) {
-			throw new Exception("can not access '" + metaFile.getPath() + "': " + e.getMessage());
+
+		if (metaFile.exists()) {
+			/* read the old meta data */
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(metaFile));
+				name = reader.readLine();
+				date = reader.readLine();
+				reader.close();
+			} catch (Exception e) {
+				throw new Exception("can not access '" + metaFile.getPath() + "': " + e.getMessage());
+			}
+		} else {
+			/* try the new meta file */
+			metaFile = new File(path, META_FILE);
+			if (!metaFile.exists()) return null;
+			
+			/* read the new meta data */
+			Configuration conf = Configuration.parse(metaFile);
+			name = conf.get(CONFIG_NAME);
+			date = conf.get(CONFIG_CREATION_TIME);
 		}
 		
 		/* validate and parse the meta data */
@@ -116,20 +132,20 @@ public class FileSystemTask extends Task {
 	public void save(File path) throws Exception {
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
-		
+
 		/* write the node only if dirty */
 		if (!this.isDirty()) return;
 		
-		/* write the meta data */
-		File metaFile = new File(path, OLD_META_FILE);
-		try {
-			PrintWriter writer = new PrintWriter(metaFile, "UTF-8");
-			writer.print(this.getName() + "\n");
-			writer.print(Long.toString(this.getCreationTime()) + "\n");
-			writer.close();
-		} catch (Exception e) {
-			throw new Exception("can not write to " + metaFile.getPath() + ": " + e.getMessage());
-		}
+		/* write the meta data in new format only */
+		File metaFile = new File(path, META_FILE);
+		Configuration conf = new Configuration();
+		conf.add(CONFIG_NAME, this.getName());
+		conf.add(CONFIG_CREATION_TIME, this.getCreationTime());
+		conf.store(metaFile);
+		
+		/* remove the old meta data file, if it exists */
+		metaFile = new File(path, OLD_META_FILE);
+		if (metaFile.exists()) metaFile.delete();
 		
 		/* write the task text, if any */
 		File textFile = new File(path, TEXT_FILE);
