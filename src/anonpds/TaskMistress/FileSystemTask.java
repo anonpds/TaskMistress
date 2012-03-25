@@ -21,8 +21,12 @@ import java.io.PrintWriter;
  * @author anonpds <anonpds@gmail.com>
  */
 public class FileSystemTask extends Task {
+	/** Configuration variable name for the task name. */
 	private static final String CONFIG_NAME = "name";
+	
+	/** Configuration variable name for the task creation time. */
 	private static final String CONFIG_CREATION_TIME = "creation_time";
+	
 	/** The name of the file that contains task meta data (old format). */
 	private static final String OLD_META_FILE = "meta.txt";
 
@@ -74,6 +78,7 @@ public class FileSystemTask extends Task {
 		/* TODO remove the support for the old meta file at some point */
 		File metaFile = new File(path, OLD_META_FILE);
 		String name = null, date = null;
+		boolean oldMetaData = false;
 
 		if (metaFile.exists()) {
 			/* read the old meta data */
@@ -85,6 +90,11 @@ public class FileSystemTask extends Task {
 			} catch (Exception e) {
 				throw new Exception("can not access '" + metaFile.getPath() + "': " + e.getMessage());
 			}
+			
+			/* old meta data loaded; set a flag, so the task will be set to dirty at the end of this function and the
+			 * task will be saved with new meta data
+			 */
+			oldMetaData = true;
 		} else {
 			/* try the new meta file */
 			metaFile = new File(path, META_FILE);
@@ -121,6 +131,9 @@ public class FileSystemTask extends Task {
 		/* clear the dirty flag, since the Task was just read from disk */
 		task.setDirty(false);
 
+		/* TODO remove this at some point: if old meta data used, set the dirty flag */
+		if (oldMetaData) task.setDirty(true);
+		
 		return task;
 	}
 	
@@ -132,7 +145,7 @@ public class FileSystemTask extends Task {
 	public void save(File path) throws Exception {
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
-
+/* DEBUG */ System.out.println("Saving " + this.getName() + " (" + this.isDirty() + ")");
 		/* write the node only if dirty */
 		if (!this.isDirty()) return;
 		
