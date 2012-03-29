@@ -201,15 +201,16 @@ public class TaskStore {
 	 * Deletes a directory and all its contents recursively.
 	 * @param path the directory to delete
 	 */
-	/* CRITICAL this should only delete the task files; there may be other files in the directory! */
 	private void deleteDirectory(File path) {
 		if (!path.isDirectory()) return;
 		
 		/* recurse into sub-directories */
 		File[] files = path.listFiles();
 		for (File file : files) {
-			if (file.isDirectory()) deleteDirectory(file); /* recurse on directories */
-			file.delete();
+			if (file.isDirectory()) {
+				deleteDirectory(file); /* recurse on directories */
+				file.delete();
+			}
 		}
 		
 		/* remove the task files */
