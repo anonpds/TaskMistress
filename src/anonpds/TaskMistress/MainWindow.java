@@ -63,6 +63,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Text for the button that opens another task tree. */
 	private static final String OPEN_BUTTON_TEXT = "Open";
 
+	/** Text of the settings button. */
+	private static final String SETTINGS_BUTTON_TEXT = "Settings";
+
 	/** The name of the variable that stores the window size. */
 	private static final String CONFIG_WINDOW_SIZE = "MainWindow.size";
 
@@ -86,6 +89,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	
 	/** Button that opens another task tree in a new Task Mistress window. */
 	private JButton openButton;
+	
+	/** Button that opens the settings window. */
+	private JButton settingsButton;
 	
 	/** The tool bar which contains the action buttons. */
 	private JToolBar toolBar;
@@ -166,18 +172,21 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.removeButton = new JButton(REMOVE_BUTTON_TEXT);
 		this.saveButton = new JButton(SAVE_BUTTON_TEXT);
 		this.openButton = new JButton(OPEN_BUTTON_TEXT);
+		this.settingsButton = new JButton(SETTINGS_BUTTON_TEXT);
 	
 		this.toolBar = new JToolBar();
 		this.toolBar.add(addButton);
 		this.toolBar.add(removeButton);
 		this.toolBar.add(saveButton);
 		this.toolBar.add(openButton);
+		this.toolBar.add(settingsButton);
 		
 		/* set the action listeners; the same action listener is used for all buttons */
 		this.addButton.addActionListener(this);
 		this.removeButton.addActionListener(this);
 		this.saveButton.addActionListener(this);
 		this.openButton.addActionListener(this);
+		this.settingsButton.addActionListener(this);
 		
 		/* set up the status bar */
 		this.statusBar = new JLabel("");
@@ -398,6 +407,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		else if (event.getSource() == this.removeButton) this.removeButtonPressed();
 		else if (event.getSource() == this.saveButton) this.saveButtonPressed();
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
+		else if (event.getSource() == this.settingsButton) TaskMistress.showSettings();
 	}
 
 	/**
