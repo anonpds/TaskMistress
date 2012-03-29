@@ -84,7 +84,6 @@ public class TaskMistress {
 	 * @return the configuration file or null if no suitable place for the configuration file was found
 	 */
 	private static File getConfigFile() {
-		/* TODO add a debug message for the config file */
 		File path = null;
 		
 		/* array of tried env. variables and paths that are appended to them */

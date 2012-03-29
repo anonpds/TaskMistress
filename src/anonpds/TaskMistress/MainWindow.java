@@ -43,7 +43,6 @@ import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
 /* TODO add support for checked items; need to implement a new CellRenderer to show the additional icons. */
-/* TODO save the default window size in the task tree meta data */
 
 /**
  * Implements the main window of the Task Mistress program.
@@ -368,7 +367,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				                                          JOptionPane.ERROR_MESSAGE);
 				if (input == JOptionPane.NO_OPTION) return;
 			}
-			/* TODO save the window size in the task tree meta data */
 			this.window.closeImmediately();
 		}
 	}
@@ -562,7 +560,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		 * @param flavor the flavour of the data to receive
 		 * @return the data object in the given flavour
 		 */
-		/* TODO is this actually needed? Or perhaps getNoder() should be removed and this used instead? */
+		/* TODO is this actually needed? Or perhaps getNode() should be removed and this used instead? */
 		@Override
 		public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
 			if (!this.isDataFlavorSupported(flavor)) throw new UnsupportedFlavorException(flavor);

@@ -70,9 +70,6 @@ public class TaskStore {
 		}
 		
 		/* add the directories and their sub-directories recursively as nodes */
-		/* TODO the addTaskDirectory function should be able to deal with the root node, so that there is no need
-		 * for this ugle bit of code.
-		 */
 		File[] files = this.path.listFiles();
 		for (File file : files) {
 			if (file.isDirectory()) this.loadTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
