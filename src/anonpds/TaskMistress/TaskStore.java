@@ -10,6 +10,7 @@
 package anonpds.TaskMistress;
 
 import java.io.File;
+import java.util.Set;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
@@ -21,14 +22,29 @@ import javax.swing.tree.TreeNode;
  * @author anonpds <anonpds@gmail.com>
  */
 public class TaskStore {
+	/** Name of the file that contains task tree meta data. */
+	private static final String META_FILE = "meta.cfg";
+	
 	/** Maximum length of a plain name, that is used when saving tasks to file system. */
 	private static final int MAX_PLAIN_NAME_LEN = 12;
-	
+
+	/** The meta data configuration variable of creation time. */
+	private static final String META_CREATION = "creationTime";
+
+	/** The meta data configuration variable of task tree format. */
+	private static final String META_FORMAT = "format";
+
+	/** Format string for the default "file system" format. */
+	private static final String FORMAT_FILE_SYSTEM = "fs";
+
 	/** The tree model that contains the stored task tree. */
 	private DefaultTreeModel treeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
 
 	/** The file system path in which the file is stored. */
 	private File path;
+
+	/** The task tree configuration. */
+	private Configuration conf;
 	
 	/**
 	 * Creates a new task store from the specified directory. The directory is created if it doesn't exist and an
@@ -41,6 +57,19 @@ public class TaskStore {
 		if (!path.exists() && !path.mkdirs()) throw new Exception("cannot create '" + path.getPath() + "'");
 		this.path = path;
 		
+		/* read the task tree meta data */
+		File metaFile = new File(path, META_FILE);
+		
+		/* create the meta data if it doesn't exist */
+		if (!metaFile.exists()) {
+			this.conf = new Configuration();
+			this.conf.add(META_CREATION, System.currentTimeMillis());
+			this.conf.add(META_FORMAT, FORMAT_FILE_SYSTEM);
+		} else {
+			/* throw an exception on error */
+			this.conf = Configuration.parse(metaFile);
+		}
+		
 		/* add the directories and their sub-directories recursively as nodes */
 		/* TODO the addTaskDirectory function should be able to deal with the root node, so that there is no need
 		 * for this ugle bit of code.
@@ -49,6 +78,40 @@ public class TaskStore {
 		for (File file : files) {
 			if (file.isDirectory()) this.loadTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
 		}
+	}
+	
+	/**
+	 * Closes the task store; writes out the configuration and any changed tasks. 
+	 * @throws Exception on error 
+	 */
+	public void close() throws Exception {
+		/* write the configuration */
+		File metaFile = new File(path, META_FILE);
+		this.conf.store(metaFile);
+		
+		/* write the tasks */
+		this.writeOut();
+	}
+	
+	/**
+	 * Returns a configuration variable from the task tree configuration.
+	 * @param name the name of the variable to return
+	 * @return value of the variable or null if no such variable exists
+	 */
+	public String getVariable(String name) {
+		return this.conf.get(name);
+	}
+	
+	/**
+	 * Sets a configuration variable to the task tree configuration; the TaskStore variables cannot be set!
+	 * @param name the name of the variable to set
+	 * @param value the value of the variable to set
+	 */
+	public void setVariable(String name, String value) {
+		if (META_CREATION.equals(name)) return;
+		if (META_FORMAT.equals(name)) return;
+		
+		this.conf.add(name, value);
 	}
 	
 	/**

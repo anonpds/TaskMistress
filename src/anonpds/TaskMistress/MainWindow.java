@@ -10,6 +10,7 @@
 package anonpds.TaskMistress;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -62,6 +63,15 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Text for the button that opens another task tree. */
 	private static final String OPEN_BUTTON_TEXT = "Open";
 
+	/** The name of the variable that stores the window size. */
+	private static final String CONFIG_WINDOW_SIZE = "MainWindow.size";
+
+	/** Default width of the window in pixels. */
+	private static final int DEFAULT_WIDTH = 640;
+
+	/** Default height of the window in pixels. */
+	private static final int DEFAULT_HEIGHT = 400;
+
 	/** The TaskStore managed by this MainWindow. */
 	private TaskStore store;
 
@@ -90,26 +100,22 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	private JTree treeView;
 
 	/**
-	 * Initialises a new main window from the given TaskStore.
-	 * @param store the TaskStore tied to the window 
-	 */
-	public MainWindow(TaskStore store) {
-		this(store, 640, 480);
-	}
-
-	/**
 	 * Initialises a new main window from the given TaskStore and with the given initial window size.
 	 * @param store the TaskStore tied to the window 
 	 * @param width the width of the window to initialise
 	 * @param height the height of the window to initialise
 	 */
-	public MainWindow(TaskStore store, int width, int height) {
+	public MainWindow(TaskStore store) {
 		this.store = store;
 
 		/* set up the window */
 		this.setTitle(TaskMistress.PROGRAM_NAME + " " + TaskMistress.PROGRAM_VERSION);
 		this.addWindowListener(new MainWindowListener(this));
-		this.setSize(width, height);
+		
+		/* try to set the window size from task tree meta data */
+		Dimension d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
+		if (d != null) this.setSize(d);
+		else this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 
 		/* build the UI */
 		this.buildUI();
@@ -120,6 +126,14 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * close the window and the tasks have already been saved (or the user has chosen not to save them).
 	 */
 	public void closeImmediately() {
+		/* write the window size */
+		this.store.setVariable(CONFIG_WINDOW_SIZE, Util.dimensionString(this.getWidth(), this.getHeight()));
+		
+		/* close the task store */
+		try {
+			this.store.close();
+		} catch (Exception e) { /* TODO error */ }
+		
 		/* make sure the task store is collected */
 		this.store = null;
 

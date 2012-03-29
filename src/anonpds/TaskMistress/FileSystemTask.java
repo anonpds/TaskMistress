@@ -145,7 +145,7 @@ public class FileSystemTask extends Task {
 	public void save(File path) throws Exception {
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
-/* DEBUG */ System.out.println("Saving " + this.getName() + " (" + this.isDirty() + ")");
+
 		/* write the node only if dirty */
 		if (!this.isDirty()) return;
 		
