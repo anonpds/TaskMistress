@@ -189,4 +189,18 @@ public class FileSystemTask extends Task {
 	public void setPlainName(String name) {
 		this.plainName = name;
 	}
+
+	/**
+	 * Removes the task files from a directory.
+	 * @param path the directory path from which to remove the files
+	 */
+	public static void removeTaskFiles(File path) {
+		File oldMetaFile = new File(path, OLD_META_FILE);
+		File metaFile = new File(path, META_FILE);
+		File textFile = new File(path, TEXT_FILE);
+		
+		if (oldMetaFile.exists()) oldMetaFile.delete();
+		if (metaFile.exists()) metaFile.delete();
+		if (textFile.exists()) textFile.delete();
+	}
 }

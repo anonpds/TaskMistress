@@ -140,15 +140,21 @@ public class TaskStore {
 	 * @param path the directory to delete
 	 */
 	/* CRITICAL this should only delete the task files; there may be other files in the directory! */
-	/* TODO move this to utility class as a public static method */
 	private void deleteDirectory(File path) {
 		if (!path.isDirectory()) return;
+		
+		/* recurse into sub-directories */
 		File[] files = path.listFiles();
 		for (File file : files) {
 			if (file.isDirectory()) deleteDirectory(file); /* recurse on directories */
-			else file.delete(); /* delete normal files; TODO errors */
+			file.delete();
 		}
-		/* when the directory is finally empty, delete itself; TODO errors*/
+		
+		/* remove the task files */
+		FileSystemTask.removeTaskFiles(path);
+
+		/* attempt to delete the directory when all sub-directories are clear; this may and should fail if there are
+		 * any files left that are not related to the task storage. */
 		path.delete();
 	}
 	
