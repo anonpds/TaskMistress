@@ -9,17 +9,14 @@
 
 package anonpds.TaskMistress;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.util.Vector;
 
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-/* TODO add a debugger; something that stores debug information and outputs it in case of an error */
+/* CRITICAL add a debugger; something that stores debug information and outputs it in case of an error */
 
 /**
  * A class that runs the TaskMistress program.
@@ -30,21 +27,32 @@ public class TaskMistress {
 	private static final String CONFIG_DIR = "TaskMistress";
 	
 	/** Configuration file name for the program. */
-	private static final String CONFIG_FILE = "conf.txt";
+	private static final String CONFIG_FILE = "main.cfg";
 
 	/** The name of the program. */
 	public static final String PROGRAM_NAME = "Task Mistress";
 
 	/** The current version of the program. */
-	public static final String PROGRAM_VERSION = "0.0c";
+	public static final String PROGRAM_VERSION = "0.1";
 
+	/** The name of the variable that contains the default task tree path. */
+	public static final String CONFIG_DEFAULT = "defaultTree";
+
+	/** The number of task tree paths kept in history. */
+	public static final int HISTORY_SIZE = 10;
+
+	/** The history configuration variable name; a number is appended to this*/
+	public static final String CONFIG_HISTORY = "history.";
+
+	/** The current configuration. */
+	private static Configuration config;
+	
 	/**
 	 * Launches an instance of the program at the given file system path.
 	 * @param path the path to the task tree to edit
 	 * @throws Exception when the TaskStore cannot be initialised
 	 */
 	public TaskMistress(File path) throws Exception {
-		/* DEBUG */ System.out.println("Running " + PROGRAM_NAME + " " + PROGRAM_VERSION +  " at " + path.getPath());
 		TaskStore store = new TaskStore(path);
 		new MainWindow(store);
 	}
@@ -75,7 +83,6 @@ public class TaskMistress {
 	 * 
 	 * @return the configuration file or null if no suitable place for the configuration file was found
 	 */
-	@SuppressWarnings("unused")
 	private static File getConfigFile() {
 		File path = null;
 		
@@ -90,7 +97,6 @@ public class TaskMistress {
 				break;
 			}
 		}
-		/* TODO an error should be given if neither XDG_CONFIG_HOME, HOME nor APPDATA env. variables exist. */
 		
 		/* if one of the environment variables existed, append the config file directory and name to it*/
 		if (path != null) {
@@ -100,7 +106,61 @@ public class TaskMistress {
 		
 		return path;
 	}
+	
+	/** Opens the settings window, if not already open. */
+	public static void showSettings() {
+		SettingsWindow.open(config);
+	}
+	
+	/**
+	 * Adds a task tree path to the history.
+	 * @param conf the configuration where the history is stored
+	 * @param path the path to add
+	 */
+	private static void addToHistory(Configuration conf, File path) {
+		/* TODO use absolute paths if possible */
+		int i;
+		for (i = 0; i < HISTORY_SIZE; i++) {
+			String name = CONFIG_HISTORY + i;
+			if (conf.get(name) == null) break;
+			if (conf.get(name).compareTo(path.getPath()) == 0) return; /* the path already exists, don't add */
+		}
+		
+		if (i < HISTORY_SIZE) {
+			String name = CONFIG_HISTORY + i;
+			conf.add(name, path.getPath());
+		}
+	}
+	
+	/**
+	 * Returns the task tree history.
+	 * @return an array of task tree history paths
+	 */
+	public static String[] getHistory() {
+		Vector<String> v = new Vector<String>();
 
+		for (int i = 0; i < HISTORY_SIZE; i++) {
+			String name = CONFIG_HISTORY + i;
+			if (config.get(name) == null) continue;
+			v.add(config.get(name));
+		}
+		
+		String[] array = new String[v.size()];
+		for (int i = 0; i < v.size(); i++) {
+			array[i] = v.get(i);
+		}
+		
+		return(array);
+	}
+	
+	/** Saves the configuration. */
+	public static void saveConfiguration() {
+		File confFile = TaskMistress.getConfigFile();
+		if (confFile != null && config != null) {
+			try { config.store(confFile); } catch (Exception e) { /* TODO errors */ }
+		}
+	}
+	
 	/**
 	 * Runs the program.
 	 * @param args command line arguments (unused)
@@ -109,62 +169,46 @@ public class TaskMistress {
 		/* set native look and feel if possible */
 		try {
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (Exception e) { /* TODO add error reporting */ }
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(null,
+			                              "Could not set native look and feel; using the default.",
+			                              "Error!",
+			                              JOptionPane.ERROR_MESSAGE);
+		}
 
-		/* a path is needed for the task tree root; either read it from configuration file or ask from user */
-		File path = null;
+		/* get the configuration file */
+		File confFile = TaskMistress.getConfigFile();
+		File defaultPath = null;
 		
-		/* the path can also be set by command line argument */
+		/* try to parse it if it exists and extract the default task tree */
+		try { config = Configuration.parse(confFile); } catch (Exception e) { /* TODO error */ }
+		if (config != null && config.get(CONFIG_DEFAULT) != null) defaultPath = new File(config.get(CONFIG_DEFAULT));
+
+		/* the path can also be set by command line argument, which overrides config */
 		/* TODO add decent command line argument handling */
-		if (args.length > 0) path = new File(args[0]);
-		
-		File conf = null; /* TODO TaskMistress.getConfigFile(); -- conf. file is disabled for now */
+		if (args.length > 0) defaultPath = new File(args[0]);
 
-		while (path == null) {
-			if (conf == null || !conf.exists()) {
-				/* no configuration file; query user */
-				path = TaskMistress.showPathDialog();
-				if (path == null) {
-					/* no directory chosen, show a message and terminate the program */
-					JOptionPane.showMessageDialog(null,
-					                              "No directory chosen. Terminating the program.",
-					                              PROGRAM_NAME + " " + PROGRAM_VERSION,
-					                              JOptionPane.INFORMATION_MESSAGE);
-					System.exit(0);
-				}
-				
-				/* directory chosen; write it config file */
-				if (conf != null) {
-					if (!conf.getParentFile().exists()) conf.getParentFile().mkdirs(); /* TODO errors */
-					try {
-						BufferedWriter writer = new BufferedWriter(new FileWriter(conf));
-						writer.write(path.getPath());
-						writer.close();
-					} catch (Exception e) { /* TODO error reporting */ System.out.println(e.getMessage());}
-				}
-			} else {
-				/* the configuration file exists; try to read it */
-				try {
-					BufferedReader reader = new BufferedReader(new FileReader(conf));
-					path = new File(reader.readLine());
-					reader.close();
-				} catch (Exception e) {
-					/* could not read the configuration file */
-					String msg = "Error: could not read " + conf.getName() + ": " + e.getMessage() +
-							", choose a working directory or quit by pressing cancel";
-					JOptionPane.showMessageDialog(null,
-					                              msg,
-					                              PROGRAM_NAME + " " + PROGRAM_VERSION,
-					                              JOptionPane.ERROR_MESSAGE);
-					/* set the conf to null, so the next iteration will show the path dialog */
-					conf = null;
-				}
+		if (defaultPath == null || !defaultPath.exists()) {
+			/* no default task tree or the default does not exist */
+			defaultPath = TaskMistress.showPathDialog();
+			if (defaultPath == null) {
+				/* no directory chosen, show a message and terminate the program */
+				JOptionPane.showMessageDialog(null,
+				                              "No directory chosen. Terminating the program.",
+				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
+				                              JOptionPane.INFORMATION_MESSAGE);
+				System.exit(0);
 			}
 		}
 		
 		/* launch TaskMistress from the given path */
+		if (config == null) config = new Configuration();
 		try {
-			new TaskMistress(path);
+			addToHistory(config, defaultPath);
+			new TaskMistress(defaultPath);
+			
+			/* if no default, make the used path default */
+			if (config.get(CONFIG_DEFAULT) == null) config.add(CONFIG_DEFAULT, defaultPath.getPath());
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(null,
 			                              "Failed to initialize the program: " + e.getMessage(),
@@ -172,5 +216,8 @@ public class TaskMistress {
 			                              JOptionPane.ERROR_MESSAGE);
 			System.exit(1);
 		}
+		
+		/* exited; save the configuration */
+		saveConfiguration();
 	}
 }
