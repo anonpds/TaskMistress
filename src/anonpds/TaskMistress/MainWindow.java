@@ -276,7 +276,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Removes the currently selected task from the task tree.
 	 * Called by the tool bar button listener when the Remove button has been pressed.
 	 */
-	private void removeButtonPressed() {
+	private void removeSelected() {
 		/* get the selection; if no selection, do nothing */
 		TreePath path = this.treeView.getSelectionPath();
 		if (path == null) return;
@@ -401,7 +401,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	@Override
 	public void actionPerformed(ActionEvent event) {
 		if (event.getSource() == this.addButton) this.addButtonPressed();
-		else if (event.getSource() == this.removeButton) this.removeButtonPressed();
+		else if (event.getSource() == this.removeButton) this.removeSelected();
 		else if (event.getSource() == this.saveButton) this.saveButtonPressed();
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
 		else if (event.getSource() == this.settingsButton) TaskMistress.showSettings();
@@ -619,7 +619,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				if (node != null) this.window.add(node);
 			} else if (e.getKeyChar() == KeyEvent.VK_DELETE) {
 				/* TODO either rename the method or split it into different ones for this and the actual button */
-				this.window.removeButtonPressed();
+				this.window.removeSelected();
 			}
 		}
 	}
