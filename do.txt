@@ -1,0 +1,5 @@
+To Do for 0.2
+=============
+
+  * add open/closed/normal status for tasks
+  * add due date for tasks
