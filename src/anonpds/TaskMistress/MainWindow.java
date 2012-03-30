@@ -623,11 +623,11 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		 */
 		@Override
 		public void keyTyped(KeyEvent e) {
-			if (e.getKeyChar() == KeyEvent.VK_ENTER) {
-				/* enter pressed: add task */
+			if (e.getKeyChar() == KeyEvent.VK_SPACE) {
+				/* SPACE: add task */
 				TaskNode node = this.window.getCurrentSelection();
 				
-				/* if shirt depressed, add as sibling, otherwise as a child */
+				/* if shift down, add as sibling, otherwise add as child */
 				if (e.isShiftDown()) node = (TaskNode) node.getParent();
 				if (node != null) this.window.add(node);
 			} else if (e.getKeyChar() == KeyEvent.VK_DELETE) {

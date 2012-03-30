@@ -1,6 +1,12 @@
 Versions
 ========
 
+0.??:
+
+  * changed keyboard controls, because they clashed with other controls
+    - SPACE: add child
+    - SHIFT+SPACE: add sibling
+
 0.1a:
 
   * support renaming tasks
