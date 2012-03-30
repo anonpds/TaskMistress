@@ -6,6 +6,7 @@ Versions
   * changed keyboard controls, because they clashed with other controls
     - SPACE: add child
     - SHIFT+SPACE: add sibling
+  * use UTF-8 for configuration files
 
 0.1a:
 

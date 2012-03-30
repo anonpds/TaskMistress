@@ -11,7 +11,8 @@ package anonpds.TaskMistress;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Set;
@@ -111,7 +112,7 @@ public class Configuration {
 		if (!confFile.exists()) throw new Exception(confFile.getName() + " does not exist.");
 		
 		/* read the file line at a time */
-		BufferedReader reader = new BufferedReader(new FileReader(confFile));
+		BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(confFile), "UTF-8"));
 		StringBuffer text;
 		String string; 
 		int line = 1;
@@ -162,7 +163,7 @@ public class Configuration {
 	 * @throws Exception on file IO error
 	 */
 	public void store(File file) throws Exception {
-		PrintStream stream = new PrintStream(file);
+		PrintStream stream = new PrintStream(file, "UTF-8");
 		try {
 			this.store(new PrintStream(file));
 		} finally {
