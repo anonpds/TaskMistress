@@ -618,7 +618,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				if (e.isShiftDown()) node = (DefaultMutableTreeNode) node.getParent();
 				if (node != null) this.window.add(node);
 			} else if (e.getKeyChar() == KeyEvent.VK_DELETE) {
-				/* TODO either rename the method or split it into different ones for this and the actual button */
 				this.window.removeSelected();
 			}
 		}

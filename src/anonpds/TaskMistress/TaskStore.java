@@ -263,9 +263,6 @@ public class TaskStore {
 		oldPath.renameTo(this.getNodePath(node));
 	}
 
-	/* CRITICAL implement a function that writes just a single task to the disk; important for saving the status
-	 * of tasks right after they have changed
-	 */
 	/**
 	 * Writes the tasks to disk. 
 	 * @throws Exception on any error
