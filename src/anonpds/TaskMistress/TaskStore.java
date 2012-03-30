@@ -11,7 +11,8 @@ package anonpds.TaskMistress;
 
 import java.io.File;
 
-import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.event.TreeModelEvent;
+import javax.swing.event.TreeModelListener;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -20,7 +21,7 @@ import javax.swing.tree.TreeNode;
  * A class that handles the storage of task trees in Task Mistress.
  * @author anonpds <anonpds@gmail.com>
  */
-public class TaskStore {
+public class TaskStore implements TreeModelListener {
 	/** Name of the file that contains task tree meta data. */
 	private static final String META_FILE = "meta.cfg";
 	
@@ -37,7 +38,7 @@ public class TaskStore {
 	private static final String FORMAT_FILE_SYSTEM = "fs";
 
 	/** The tree model that contains the stored task tree. */
-	private DefaultTreeModel treeModel = new DefaultTreeModel(new DefaultMutableTreeNode());
+	private DefaultTreeModel treeModel = new DefaultTreeModel(new TaskNode());
 
 	/** The file system path in which the file is stored. */
 	private File path;
@@ -69,10 +70,13 @@ public class TaskStore {
 			this.conf = Configuration.parse(metaFile);
 		}
 		
+		/* add a listener to get information on changes to the tree; needed for task renames */
+		this.treeModel.addTreeModelListener(this);
+		
 		/* add the directories and their sub-directories recursively as nodes */
 		File[] files = this.path.listFiles();
 		for (File file : files) {
-			if (file.isDirectory()) this.loadTaskDirectory((DefaultMutableTreeNode) this.treeModel.getRoot(), file);
+			if (file.isDirectory()) this.loadTaskDirectory((TaskNode) this.treeModel.getRoot(), file);
 		}
 	}
 	
@@ -124,7 +128,7 @@ public class TaskStore {
 	 * @param path the directory path to add
 	 * @throws Exception on any IO or parse errors
 	 */
-	private void loadTaskDirectory(DefaultMutableTreeNode tree, File path) throws Exception {
+	private void loadTaskDirectory(TaskNode tree, File path) throws Exception {
 		/* must be a directory */
 		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
 
@@ -133,7 +137,7 @@ public class TaskStore {
 		
 		/* add the node to the tree */
 		if (task != null) {
-			DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
+			TaskNode node = new TaskNode(task);
 			tree.add(node);
 
 			/* finally recurse into any potential sub-directories */
@@ -148,8 +152,8 @@ public class TaskStore {
 	 * Returns the root node of the tree.
 	 * @return the root node
 	 */
-	public DefaultMutableTreeNode getRoot() {
-		return (DefaultMutableTreeNode) this.treeModel.getRoot();
+	public TaskNode getRoot() {
+		return (TaskNode) this.treeModel.getRoot();
 	}
 
 	/**
@@ -158,9 +162,9 @@ public class TaskStore {
 	 * @param name the name of the new node to add
 	 * @return the added node
 	 */
-	public DefaultMutableTreeNode add(DefaultMutableTreeNode parent, String name) {
+	public TaskNode add(TaskNode parent, String name) {
 		Task task = new FileSystemTask(name, "", System.currentTimeMillis(), true, null);
-		DefaultMutableTreeNode node = new DefaultMutableTreeNode(task);
+		TaskNode node = new TaskNode(task);
 		this.treeModel.insertNodeInto(node, parent, parent.getChildCount());
 		return(node);
 	}
@@ -170,7 +174,7 @@ public class TaskStore {
 	 * @param node the node to query
 	 * @return the file system path to the node
 	 */
-	private File getNodePath(DefaultMutableTreeNode node) {
+	private File getNodePath(TaskNode node) {
 		/* start with the task tree root directory */
 		File path = this.path;
 
@@ -180,8 +184,8 @@ public class TaskStore {
 		/* start traversal from second path object; first is root and already accounted for */
 		for (int i = 1; i < treePath.length; i++) {
 			/* get the Task object from the tree node */
-			DefaultMutableTreeNode curNode = (DefaultMutableTreeNode) treePath[i];
-			Task task = (Task) curNode.getUserObject();
+			TaskNode curNode = (TaskNode) treePath[i];
+			Task task = curNode.getTask();
 			
 			/* get the file system (plain) name of the task; create it, if it's not set */
 			String curPath = ((FileSystemTask)task).getPlainName();
@@ -222,7 +226,7 @@ public class TaskStore {
 	 * Removes a node and all its children from the tree.
 	 * @param node the node to remove
 	 */
-	public void remove(DefaultMutableTreeNode node) {
+	public void remove(TaskNode node) {
 		if (node.isRoot()) return; /* never remove the root node */
 		
 		/* delete the file system path of the node and its children */
@@ -234,24 +238,52 @@ public class TaskStore {
 	}
 	
 	/**
+	 * Renames a task.
+	 * @param node the node that contains the task to rename
+	 * @param name the new name of the task
+	 */
+	public void rename(TaskNode node, String name) {
+		/* don't rename if null name or name hasn't changed */
+		if (name == null || name.compareTo(node.getTask().getName()) == 0) return;
+		
+		/* store the old task folder and plain name */
+		File path = this.getNodePath(node);
+		String plainName = ((FileSystemTask)node.getTask()).getPlainName();
+		
+		/* rename the task and set the new file system name*/
+		node.getTask().setName(name);
+		((FileSystemTask)node.getTask()).setPlainName(null);
+		this.setFileSystemName(node);
+		
+		/* no need to rename, if the plain name hasn't changed */
+		if (((FileSystemTask)node.getTask()).getPlainName().compareTo(plainName) == 0) return;
+		
+		/* rename the folder */
+		path.renameTo(this.getNodePath(node));
+		
+		/* update the treeModel, so the node will be repainted in the tree view */
+		this.treeModel.nodeChanged(node);
+	}
+	
+	/**
 	 * Moves a node and all its children under another node.
 	 * @param dest the destination node
 	 * @param node the node to move
 	 * @throws Exception when the move is not possible
 	 */
-	public void move(DefaultMutableTreeNode dest, DefaultMutableTreeNode node) throws Exception {
+	public void move(TaskNode dest, TaskNode node) throws Exception {
 		/* never move root node or a node unto itself or a node to its parent */
 		if (node.isRoot() || node == dest || node.getParent() == dest) return;
 
 		/* never move a parent down into itself */
-		for (DefaultMutableTreeNode child = dest; child != null; child = (DefaultMutableTreeNode) child.getParent())
+		for (TaskNode child = dest; child != null; child = (TaskNode) child.getParent())
 			if (child == node) throw new Exception("Cannot move node under itself!");
 
 		/* save the file system path of the old node location */
 		File oldPath = this.getNodePath(node);
 		
 		/* invalidate the file system name of the node */
-		Task oldTask = (Task) node.getUserObject();
+		Task oldTask = node.getTask();
 		((FileSystemTask)oldTask).setPlainName(null);
 		
 		/* remove the node and add it under the destination node */
@@ -285,10 +317,10 @@ public class TaskStore {
 	 * @param node the task node
 	 * @throws Exception on IO errors
 	 */
-	public void writeOut(DefaultMutableTreeNode node) throws Exception {
+	public void writeOut(TaskNode node) throws Exception {
 		/* get the path of the node and the task */
 		File path = this.getNodePath(node);
-		Task task = (Task) node.getUserObject();
+		Task task = node.getTask();
 		if (!node.isRoot()) ((FileSystemTask)task).save(path);
 	}
 
@@ -298,17 +330,17 @@ public class TaskStore {
 	 * @param node the node to write out
 	 * @throws Exception on IO errors
 	 */
-	private void writeOutRecurse(File path, DefaultMutableTreeNode node) throws Exception {
+	private void writeOutRecurse(File path, TaskNode node) throws Exception {
 		/* get the user object from the node */
-		Task task = (Task) node.getUserObject();
+		Task task = node.getTask();
 
 		/* Don't save the root node */
 		if (!node.isRoot())	((FileSystemTask)task).save(path);
 		
 		/* recurse for each of the child nodes */
 		for (int i = 0; i < node.getChildCount(); i++) {
-			DefaultMutableTreeNode child = (DefaultMutableTreeNode) node.getChildAt(i);
-			Task childTask = (Task) child.getUserObject();
+			TaskNode child = (TaskNode) node.getChildAt(i);
+			Task childTask = child.getTask();
 			
 			/* make sure the file system name has been set for the node */
 			this.setFileSystemName(child);
@@ -321,18 +353,18 @@ public class TaskStore {
 	 * Sets the file system name of a tree node, if it isn't set already.
 	 * @param curNode the node
 	 */
-	private void setFileSystemName(DefaultMutableTreeNode curNode) {
+	private void setFileSystemName(TaskNode curNode) {
 		/* don't set for root */
 		if (curNode.isRoot()) return;
 		
 		/* get the user object from the tree node */
-		Task task = (Task) curNode.getUserObject();
+		Task task = curNode.getTask();
 
 		/* don't set name if one already exists */
 		if (((FileSystemTask)task).getPlainName() != null) return;
 
 		/* the parent path under which this node will be written */
-		File path = this.getNodePath((DefaultMutableTreeNode) curNode.getParent());
+		File path = this.getNodePath((TaskNode) curNode.getParent());
 		
 		/* remove all silly characters from the node name and make everything lower-case */
 		String name = "";
@@ -378,11 +410,58 @@ public class TaskStore {
 	}
 	/* TODO make this into actual debug function that outputs to some debug stream, instead of System.out */
 	@SuppressWarnings("javadoc")
-	public void print(int depth, DefaultMutableTreeNode node) {
-		Task task = (Task) node.getUserObject();
+	public void print(int depth, TaskNode node) {
+		Task task = node.getTask();
 		for (int i = 0; i < depth; i++) System.out.print("  ");
 		if (task != null) System.out.println(task.getName() + ": " + task.getText());
 		for (int i = 0; i < node.getChildCount(); i++)
-			print(depth + 1, (DefaultMutableTreeNode) node.getChildAt(i));
+			print(depth + 1, (TaskNode) node.getChildAt(i));
+	}
+
+	/**
+	 * Handles the event of a node changing.
+	 * @param event the TreeModelEvent
+	 */
+	@Override
+	public void treeNodesChanged(TreeModelEvent event) {
+		/* at this point the TreeModel has already called setUserObject on the node;
+		 * get the value set by that function call and rename the task to that. */
+		
+		/* there may be several changed nodes; loop through all of them */
+		for (Object obj : event.getChildren()) {
+			/* must be node */
+			if (!(obj instanceof TaskNode)) continue;
+			
+			/* the node's userObject must be set to a String */
+			TaskNode node = (TaskNode) obj;
+			if (!(node.getRealUserObject() instanceof String)) continue;
+			
+			/* rename */
+			this.rename(node, (String)node.getRealUserObject());
+		}
+	}
+
+	/**
+	 * Handles the event of a nodes being inserted; currently unused.
+	 * @param event the TreeModelEvent
+	 */
+	@Override
+	public void treeNodesInserted(TreeModelEvent event) {
+	}
+
+	/**
+	 * Handles the event of a nodes being removed; currently unused.
+	 * @param event the TreeModelEvent
+	 */
+	@Override
+	public void treeNodesRemoved(TreeModelEvent event) {
+	}
+
+	/**
+	 * Handles the event of the tree structure changing; currently unused.
+	 * @param event the TreeModelEvent
+	 */
+	@Override
+	public void treeStructureChanged(TreeModelEvent event) {
 	}
 }

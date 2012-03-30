@@ -1,6 +1,10 @@
 Versions
 ========
 
+0.1a:
+
+  * support renaming tasks
+
 0.1:
 
   * add support for moving tasks in the tree
