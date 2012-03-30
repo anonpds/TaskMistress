@@ -107,8 +107,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/**
 	 * Initialises a new main window from the given TaskStore and with the given initial window size.
 	 * @param store the TaskStore tied to the window 
-	 * @param width the width of the window to initialise
-	 * @param height the height of the window to initialise
 	 */
 	public MainWindow(TaskStore store) {
 		this.store = store;
