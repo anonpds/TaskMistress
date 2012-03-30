@@ -292,7 +292,6 @@ public class TaskStore {
 		/* get the path of the node and the task */
 		File path = this.getNodePath(node);
 		Task task = (Task) node.getUserObject();
-		/* DEBUG */ System.out.println("Writing out " + task.getName() + " to " + path.getPath());
 		if (!node.isRoot()) ((FileSystemTask)task).save(path);
 	}
 
@@ -323,7 +322,6 @@ public class TaskStore {
 
 	/**
 	 * Sets the file system name of a tree node, if it isn't set already.
-	 * @param path the file system path where the node resides
 	 * @param curNode the node
 	 */
 	private void setFileSystemName(DefaultMutableTreeNode curNode) {
