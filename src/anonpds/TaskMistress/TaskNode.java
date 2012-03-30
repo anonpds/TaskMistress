@@ -53,7 +53,6 @@ public class TaskNode extends DefaultMutableTreeNode {
 	 /**
 	  * Returns the user object associated with this node; the actual returned object is the name of the Task.
 	  * This is needed for some of the treeView code, because the Object returned by this is used to display the tree.
-	  * @param object
 	  */
 	 @Override
 	 public Object getUserObject() {
