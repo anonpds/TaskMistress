@@ -5,8 +5,7 @@ This file contains the main tasks to get to version 0.1.
 
 Open:
 
-  * write nodes out when they change; it's better to write them one at
-    a time than all at once
+  * Nothing :-)
 
 Done:
 
@@ -23,4 +22,6 @@ Done:
     - save the default window size; MainWindow does this, so perhaps the
       meta data needs to be accessible from outside Store? 
   * add configuration option for selecting the default tree
+  * write nodes out when they change; it's better to write them one at
+    a time than all at once
   

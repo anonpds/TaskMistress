@@ -282,6 +282,19 @@ public class TaskStore {
 	public void writeOut(File path) throws Exception {
 		this.writeOutRecurse(this.path, this.getRoot());
 	}
+	
+	/**
+	 * Writes out a single task.
+	 * @param node the task node
+	 * @throws Exception on IO errors
+	 */
+	public void writeOut(DefaultMutableTreeNode node) throws Exception {
+		/* get the path of the node and the task */
+		File path = this.getNodePath(node);
+		Task task = (Task) node.getUserObject();
+		/* DEBUG */ System.out.println("Writing out " + task.getName() + " to " + path.getPath());
+		if (!node.isRoot()) ((FileSystemTask)task).save(path);
+	}
 
 	/**
 	 * Writes the tasks in given node and all its children to disk recursively.

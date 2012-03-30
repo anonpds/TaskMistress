@@ -383,8 +383,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
 			Task task = (Task) node.getUserObject();
 			if (task != null) this.taskView.updateText();
-			/* TODO just a temporary solution */
-			if (task.isDirty()) try { this.store.writeOut(); } catch (Exception e) { /* TODO error */ }
+			if (task.isDirty()) try { this.store.writeOut(node); } catch (Exception e) { /* TODO error */ }
 		}
 		
 		/* set the taskView with the Task of the new selection */
