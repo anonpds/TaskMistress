@@ -75,11 +75,12 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 		/* TODO perhaps change the priority and try file first and class loader then? */
 		ImageIcon icon;
 
-		URL url = System.class.getResource(name);
+		URL url = TaskMistress.class.getClassLoader().getResource(name);
 		if (url != null) icon = new ImageIcon(url);
 		else icon = new ImageIcon(name);
 
 		if (icon.getImageLoadStatus() == MediaTracker.ERRORED) throw new RuntimeException("Icon " + name + " not found.");
+
 		return icon;
 	}
 	
