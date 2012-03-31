@@ -3,16 +3,25 @@ Versions
 
 0.??:
 
+  * added custom icons for treeView
+  * added status for tasks
+
+
+0.1 Series
+----------
+
+0.1b: 30th March 2012
+
   * changed keyboard controls, because they clashed with other controls
     - SPACE: add child
     - SHIFT+SPACE: add sibling
   * use UTF-8 for configuration files
 
-0.1a:
+0.1a: 30th March 2012
 
   * support renaming tasks
 
-0.1:
+0.1: 30th March 2012
 
   * add support for moving tasks in the tree
   * additional keyboard controls for the tree view:
@@ -30,22 +39,30 @@ Versions
   * write nodes out when they change; it's better to write them one at
     a time than all at once
 
-0.0c:
+
+Early Development Versions
+--------------------------
+
+0.0c: 24th March 2012
 
   * added the TaskView.java file that was forgotten from the commit to 0.0b
 
-0.0b: BROKEN
+0.0b: !BROKEN! 24th March 2012
 
   * moved the task display code from MainWindow to new TaskView component
   * changes to task text are now shown on the task status line
   * fix: Tasks left open in the editor are now correctly saved
   * fix: only Tasks that have actually changed are saved
 
-0.0a:
+0.0a: 22nd March 2012
 
   * added window title to the main window
   * added support for selecting the working directory through command line
 
-0.0:
+0.0: 21st March 2012
 
-  * Initial version
+  * the first "real" version
+
+0.-1:
+
+  * early development version
