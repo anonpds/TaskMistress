@@ -156,7 +156,11 @@ public class TaskMistress {
 	/** Saves the configuration. */
 	public static void saveConfiguration() {
 		File confFile = TaskMistress.getConfigFile();
+
 		if (confFile != null && config != null) {
+			/* create the conf file path if necessary */
+			File path = confFile.getParentFile();
+			if (!path.exists()) path.mkdirs();
 			try { config.store(confFile); } catch (Exception e) { /* TODO errors */ }
 		}
 	}
