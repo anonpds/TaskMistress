@@ -1,14 +1,15 @@
 Versions
 ========
 
-0.??:
-
-  * added custom icons for treeView
-  * added status for tasks
-
 
 0.1 Series
 ----------
+
+0.1c: 21st March 2012
+
+  * removed old meta data format support
+  * added custom icons for treeView
+  * added status for tasks (no support for changing the status yet)
 
 0.1b: 30th March 2012
 
