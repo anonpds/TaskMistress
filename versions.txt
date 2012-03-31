@@ -1,6 +1,12 @@
 Versions
 ========
 
+0.??:
+
+  * fixed icon loading from Jar file
+  * fixed Jar file generation in makefile
+  * the configuration file path is created, if it doesn't exist
+
 
 0.1 Series
 ----------
