@@ -1,0 +1,12 @@
+These icons are from the "Mini" icon-set at famfamfam.com with some changes:
+
+  * default.gif: renamed page.gif
+  * done.gif: renamed icon_accept.gif
+  * undone.gif: renamed action_stop.gif
+  * folder.gif: original
+  * done-folder.gif: combined folder.gif and shrunk icon_accept.gif
+  * undone-folder.gif: combined folder.gif and shrunk action_stop.gif
+
+The original icons are "available for free use for any purpose" (source:
+http://famfamfam.com/lab/icons/mini/) and the same applies to the changes
+I have made to the original icons.
