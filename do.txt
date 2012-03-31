@@ -2,4 +2,6 @@ To Do for 0.2
 =============
 
   * add open/closed/normal status for tasks
+    - buttons/right click menu to change the status?
+    - save the status in meta data
   * add due date for tasks
