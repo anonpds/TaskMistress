@@ -208,12 +208,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setFocusable(true);
 		this.treeView.addKeyListener(new TreeViewKeyListener(this));
 		this.treeView.setEditable(true);
-		
-		/* TODO later:
-		DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
-		renderer.setLeafIcon(new ImageIcon("res/note.gif"));
-		this.treeView.setCellRenderer(renderer);
-		*/
+		this.treeView.setCellRenderer(new TaskNodeRenderer());
 		
 		/* initialise the TaskView */
 		this.taskView = new TaskView();

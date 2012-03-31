@@ -14,6 +14,15 @@ package anonpds.TaskMistress;
  * @author anonpds <anonpds@gmail.com>
  */
 class Task {
+	/** The status code for task that has been done. */
+	public static final short STATUS_DONE = 1;
+
+	/** The status code for task that has not been done. */
+	public static final short STATUS_UNDONE = 2;
+
+	/** The status code for task that doesn't have done/undone status. */
+	public static final short STATUS_DEFAULT = 3;
+
 	/** Tells whether the task has changed since last write to disk. */
 	private boolean dirty;
 	
@@ -26,6 +35,9 @@ class Task {
 	/** The text of the task. */
 	private String text;
 
+	/** The status of the task; done, undone or default. */
+	private short status;
+	
 	/**
 	 * Constructs a new task object.
 	 * @param name the name of the task 
@@ -38,6 +50,7 @@ class Task {
 		this.text = text;
 		this.timeStamp = timeStamp;
 		this.dirty = dirty;
+		this.status = STATUS_DEFAULT;
 	}
 	
 	/**
@@ -112,6 +125,23 @@ class Task {
 			this.dirty = true;
 			this.text = text;
 		}
+	}
+	
+	/**
+	 * Returns the status of the task.
+	 * @return the status of the task
+	 */
+	public short getStatus() {
+		return this.status;
+	}
+	
+	/**
+	 * Sets the status of the task.
+	 * @param status the new status of the task
+	 */
+	public void setStatus(short status) {
+		if (status != STATUS_DONE && status != STATUS_UNDONE && status != STATUS_DEFAULT) return; /* TODO error */
+		this.status = status;
 	}
 	
 	/**
