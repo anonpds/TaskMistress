@@ -141,7 +141,9 @@ class Task {
 	 */
 	public void setStatus(short status) {
 		if (status != STATUS_DONE && status != STATUS_UNDONE && status != STATUS_DEFAULT) return; /* TODO error */
+		if (status == this.status) return; /* no change */
 		this.status = status;
+		this.setDirty(true);
 	}
 	
 	/**
