@@ -10,14 +10,20 @@
 package anonpds.TaskMistress;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.text.DateFormat;
 import java.util.Date;
 
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.tree.DefaultTreeModel;
+
+/* CRITICAL does this task have to have its own dirty status? Why not just use the tasks one? */
 
 /**
  * Implements a component that displays task editor and information about the currently edited task.
@@ -33,7 +39,16 @@ import javax.swing.event.DocumentListener;
  * @author anonpds <anonpds@gmail.com>
  */
 @SuppressWarnings("serial")
-public class TaskView extends JPanel implements DocumentListener {
+public class TaskView extends JPanel implements DocumentListener, ActionListener {
+	/** Text of task default status. */
+	private static final String DEFAULT_TEXT = "Default";
+
+	/** Text of task done status. */
+	private static final String DONE_TEXT = "Done";
+
+	/** Text of task undone status. */
+	private static final String UNDONE_TEXT = "Undone";
+
 	/** Label that displays the Task status. */
 	private JLabel statusBar;
 	
@@ -43,18 +58,40 @@ public class TaskView extends JPanel implements DocumentListener {
 	/** The currently displayed Task. */
 	private Task task;
 
+	/** Tree node that contains the current task. */
+	private TaskNode node;
+
 	/** Indicates whether the editor text has changed since it was loaded from the task. */
 	private boolean dirty;
 
+	/** Combo box that displays the status of the task (done, undone or default). */
+	private JComboBox statusBox;
+	
+	/** statusBox choices. */
+	private String[] comboBoxChoices = { DEFAULT_TEXT, DONE_TEXT, UNDONE_TEXT };
+
+	/** TreeModel that contains the task. Informed of changes to task status. */
+	private DefaultTreeModel treeModel;
+
 	/**
 	 * Constructs the TaskView.
+	 * @param model 
 	 */
-	public TaskView() {
+	public TaskView(DefaultTreeModel model) {
+		this.treeModel = model;
+		
 		/* build the user interface */
-		this.setLayout(new BorderLayout());
-		this.statusBar = new JLabel("No task selected.");
 		this.editor = new TaskEditor();
-		this.add(this.statusBar, BorderLayout.NORTH);
+		this.statusBar = new JLabel("No task selected.");
+		this.statusBox = new JComboBox(this.comboBoxChoices);
+		this.statusBox.addActionListener(this);
+
+		JPanel statusPanel = new JPanel(new BorderLayout());
+		statusPanel.add(this.statusBar, BorderLayout.WEST);
+		statusPanel.add(this.statusBox, BorderLayout.EAST);
+
+		this.setLayout(new BorderLayout());
+		this.add(statusPanel, BorderLayout.NORTH);
 		this.add(new JScrollPane(this.editor), BorderLayout.CENTER);
 		
 		/* set the document listener to the editor to watch for changes */
@@ -72,20 +109,46 @@ public class TaskView extends JPanel implements DocumentListener {
 	/**
 	 * Sets the Task that is displayed in the TaskView.
 	 * @param task the Task to display
+	 * @param node the tree node that contains the task
 	 */
-	public void setTask(Task task) {
+	public void setTask(Task task, TaskNode node) {
 		if (task == null) {
 			this.task = null;
+			this.node = null;
 			this.statusBar.setText("No task selected.");
 			this.editor.close("");
+			this.setStatusBox(Task.STATUS_DEFAULT);
 		} else {
 			this.task = task;
+			this.node = node;
 			this.editor.open(this.task.getText());
 			this.setDirty(false);
+			this.setStatusBox(task.getStatus());
 			this.updateStatus();
 		}
 	}
 
+	/**
+	 * Sets the status combo box value.
+	 * @param status the new status for the combo box
+	 */
+	private void setStatusBox(short status) {
+		if (status == Task.STATUS_DEFAULT) this.statusBox.setSelectedItem(DEFAULT_TEXT);
+		else if (status == Task.STATUS_DONE) this.statusBox.setSelectedItem(DONE_TEXT);
+		else if (status == Task.STATUS_UNDONE) this.statusBox.setSelectedItem(UNDONE_TEXT);
+	}
+
+	/** Sets the Task status. */
+	private void setTaskStatus(short status) {
+		if (task == null || status == this.task.getStatus()) return;
+
+		this.task.setStatus(status);
+		this.setDirty(true);
+		this.updateStatus();
+		
+		if (this.treeModel != null) this.treeModel.reload(node);
+	}
+	
 	/** Updates the status bar text. */
 	public void updateStatus() {
 		/* has the task been changed since last save */
@@ -154,5 +217,21 @@ public class TaskView extends JPanel implements DocumentListener {
 	@Override
 	public void removeUpdate(DocumentEvent e) {
 		this.editorChanged();
+	}
+
+	/**
+	 * Listens to the task status combo box.
+	 * @param event the action event
+	 */
+	@Override
+	public void actionPerformed(ActionEvent event) {
+		/* do nothing if no task active */
+		if (this.task == null) return;
+		
+		/* change the task status */
+		String selected = (String) this.statusBox.getSelectedItem();
+		if (selected == DEFAULT_TEXT) this.setTaskStatus(Task.STATUS_DEFAULT);
+		else if (selected == DONE_TEXT) this.setTaskStatus(Task.STATUS_DONE);
+		else if (selected == UNDONE_TEXT) this.setTaskStatus(Task.STATUS_UNDONE);
 	}
 }

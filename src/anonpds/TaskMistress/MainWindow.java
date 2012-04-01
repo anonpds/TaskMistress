@@ -38,6 +38,7 @@ import javax.swing.JTree;
 import javax.swing.TransferHandler;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
@@ -211,7 +212,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setCellRenderer(new TaskNodeRenderer());
 		
 		/* initialise the TaskView */
-		this.taskView = new TaskView();
+		this.taskView = new TaskView((DefaultTreeModel) this.store.getTreeModel());
 		
 		/* set up the split pane that contains the task tree view and editor */
 		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.treeView, this.taskView);
@@ -397,7 +398,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		path = event.getNewLeadSelectionPath();
 		if (path != null) {
 			TaskNode node = (TaskNode) path.getLastPathComponent();
-			this.taskView.setTask(node.getTask());
+			this.taskView.setTask(node.getTask(), node);
 		}
 	}
 

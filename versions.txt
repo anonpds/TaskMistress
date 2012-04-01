@@ -6,6 +6,8 @@ Versions
   * fixed icon loading from Jar file
   * fixed Jar file generation in makefile
   * the configuration file path is created, if it doesn't exist
+  * minor bug fixes
+  * added task status (default, done, undone)
 
 
 0.1 Series

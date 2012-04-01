@@ -26,6 +26,9 @@ public class FileSystemTask extends Task {
 	/** Configuration variable name for the task creation time. */
 	private static final String CONFIG_CREATION_TIME = "creation_time";
 	
+	/** Configuration variable for the task status. */
+	private static final String CONFIG_STATUS = "status";
+
 	/** The name of the file that contains task meta data. */
 	private static final String META_FILE = "task.cfg";
 
@@ -71,7 +74,7 @@ public class FileSystemTask extends Task {
 		task.setPlainName(plainName);
 
 		/* read the meta data; if the meta data file does not exist, the path does not contain a task */
-		String name = null, date = null;
+		String name = null, date = null, status;
 		File metaFile = new File(path, META_FILE);
 		if (!metaFile.exists()) return null;
 
@@ -79,15 +82,17 @@ public class FileSystemTask extends Task {
 		Configuration conf = Configuration.parse(metaFile);
 		name = conf.get(CONFIG_NAME);
 		date = conf.get(CONFIG_CREATION_TIME);
+		status = conf.get(CONFIG_STATUS);
 		
 		/* validate and parse the variables */
 		if (name == null) throw new Exception("no name in metadata " + metaFile.getPath());
 		if (date == null) throw new Exception("no date in metadata " + metaFile.getPath());
 		long timeStamp = Long.parseLong(date);
 
-		/* set the name and creation date */
+		/* set the name, creation date and status */
 		task.setName(name);
 		task.setCreationTime(timeStamp);
+		try { task.setStatus(Short.parseShort(status)); } catch (Exception e) {}
 		
 		/* read the task text if it exists */
 		File textFile = new File(path, TEXT_FILE);
@@ -125,6 +130,7 @@ public class FileSystemTask extends Task {
 		Configuration conf = new Configuration();
 		conf.add(CONFIG_NAME, this.getName());
 		conf.add(CONFIG_CREATION_TIME, this.getCreationTime());
+		conf.add(CONFIG_STATUS, this.getStatus());
 		conf.store(metaFile);
 		
 		/* write the task text, if any */
