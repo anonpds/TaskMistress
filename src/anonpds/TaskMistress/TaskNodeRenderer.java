@@ -109,15 +109,15 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 		
 		if (node.getChildCount() > 0) {
 			switch (task.getStatus()) {
-			case Task.STATUS_DONE: icon = this.doneFolderIcon;
-			case Task.STATUS_UNDONE: icon = this.undoneFolderIcon;
-			case Task.STATUS_DEFAULT: icon = this.defaultFolderIcon;
+			case Task.STATUS_DONE: icon = this.doneFolderIcon; break;
+			case Task.STATUS_UNDONE: icon = this.undoneFolderIcon; break;
+			case Task.STATUS_DEFAULT: icon = this.defaultFolderIcon; break;
 			}
 		} else {
 			switch (task.getStatus()) {
-			case Task.STATUS_DONE: icon = this.doneIcon;
-			case Task.STATUS_UNDONE: icon = this.undoneIcon;
-			case Task.STATUS_DEFAULT: icon = this.defaultIcon;
+			case Task.STATUS_DONE: icon = this.doneIcon; break;
+			case Task.STATUS_UNDONE: icon = this.undoneIcon; break;
+			case Task.STATUS_DEFAULT: icon = this.defaultIcon; break;
 			}
 		}
 		
