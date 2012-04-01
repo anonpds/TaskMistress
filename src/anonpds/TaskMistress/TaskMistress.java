@@ -33,7 +33,7 @@ public class TaskMistress {
 	public static final String PROGRAM_NAME = "Task Mistress";
 
 	/** The current version of the program. */
-	public static final String PROGRAM_VERSION = "0.1c";
+	public static final String PROGRAM_VERSION = "0.1d";
 
 	/** The name of the variable that contains the default task tree path. */
 	public static final String CONFIG_DEFAULT = "defaultTree";
