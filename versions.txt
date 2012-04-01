@@ -5,7 +5,7 @@ Versions
 0.1 Series
 ----------
 
-0.1d:
+0.1d: 1st April 2012
 
   * fixed icon loading from Jar file
   * fixed Jar file generation in makefile
@@ -13,7 +13,7 @@ Versions
   * minor bug fixes
   * added task status (default, done, undone)
 
-0.1c: 21st March 2012
+0.1c: 31st March 2012
 
   * removed old meta data format support
   * added custom icons for treeView
