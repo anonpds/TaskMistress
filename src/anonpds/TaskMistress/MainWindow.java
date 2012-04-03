@@ -32,6 +32,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 import javax.swing.JTree;
@@ -215,7 +216,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.taskView = new TaskView((DefaultTreeModel) this.store.getTreeModel());
 		
 		/* set up the split pane that contains the task tree view and editor */
-		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.treeView, this.taskView);
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(this.treeView), this.taskView);
 		
 		/* set up the main panel and add the components*/
 		JPanel mainPanel = new JPanel(new BorderLayout());
