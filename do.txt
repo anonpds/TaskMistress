@@ -1,7 +1,9 @@
 To Do for 0.2
 =============
 
-  * add open/closed/normal status for tasks
-    - buttons/right click menu to change the status?
-    - save the status in meta data
   * add due date for tasks
+  * add right click menu for tasks
+    - export
+    - mark done/undone/default 
+  * add right click menu for editor
+    - copy, paste, cut
