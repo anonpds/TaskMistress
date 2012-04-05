@@ -1,6 +1,10 @@
 Versions
 ========
 
+0.??:
+
+  * added status messages to status bar
+
 
 0.1 Series
 ----------

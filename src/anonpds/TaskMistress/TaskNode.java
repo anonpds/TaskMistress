@@ -85,4 +85,17 @@ public class TaskNode extends DefaultMutableTreeNode {
 		if (this.task == null) return "";
 		return this.task.getName();
 	}
+
+	/**
+	 * Counts the nodes in the tree.
+	 * @return the total number of nodes in the tree
+	 */
+	public int countNodes() {
+		int nodes = 1;
+		for (int i = 0; i < this.getChildCount(); i++) {
+			TaskNode node = (TaskNode) this.getChildAt(i);
+			nodes += node.countNodes();
+		}
+		return(nodes);
+	}
 }

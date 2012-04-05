@@ -197,7 +197,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.settingsButton.addActionListener(this);
 		
 		/* set up the status bar */
-		this.statusBar = new JLabel("");
+		this.statusBar = new JLabel(" ");
 		
 		/* initialise the treeView */
 		this.treeView = new JTree(this.store.getTreeModel());
@@ -223,6 +223,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		mainPanel.add(this.toolBar, BorderLayout.NORTH);
 		mainPanel.add(this.statusBar, BorderLayout.SOUTH);
 		mainPanel.add(splitPane, BorderLayout.CENTER);
+		
+		/* show the number of tasks as a status message (minus one for root) */
+		this.statusBar.setText((this.store.getRoot().countNodes() - 1) + " tasks loaded.");
 		
 		/* add the components to the main window and set the window visible */
 		this.add(mainPanel);
@@ -271,6 +274,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		TreeNode[] newPath = newNode.getPath();
 		TreePath treePath = new TreePath(newPath);
 		this.treeView.setSelectionPath(treePath);
+		
+		/* show a message */
+		this.statusBar.setText(newNode.getTask().getName() + " added.");
 	}
 
 	/**
@@ -296,6 +302,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		
 		/* remove the node */
 		this.store.remove(node);
+
+		/* show a message */
+		this.statusBar.setText(node.getTask().getName() + " removed.");
 	}
 
 	/**
@@ -303,7 +312,12 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Called by the tool bar button listener when the Save button has been pressed.
 	 */
 	private void saveButtonPressed() {
-		try { this.store.writeOut(); } catch (Exception e) { /* TODO errors */ }
+		try {
+			int saved = this.store.writeOut();
+			this.statusBar.setText(saved + " tasks written to disk.");
+		} catch (Exception e) {
+			// TODO errors
+		}
 	}
 
 	/**
@@ -392,7 +406,12 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			TaskNode node = (TaskNode) path.getLastPathComponent();
 			Task task = node.getTask();
 			if (task != null) this.taskView.updateText();
-			if (task.isDirty()) try { this.store.writeOut(node); } catch (Exception e) { /* TODO error */ }
+			if (task.isDirty()) { 
+				try {
+					this.store.writeOut(node);
+					this.statusBar.setText(node.getTask().getName() + " written to disk.");
+				} catch (Exception e) { /* TODO error */ }
+			} else this.statusBar.setText(" ");
 		}
 		
 		/* set the taskView with the Task of the new selection */

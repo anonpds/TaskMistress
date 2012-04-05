@@ -297,19 +297,21 @@ public class TaskStore implements TreeModelListener {
 
 	/**
 	 * Writes the tasks to disk. 
+	 * @return the number of tasks actually written to disk
 	 * @throws Exception on any error
 	 */
-	public void writeOut() throws Exception {
-		this.writeOut(this.path);
+	public int writeOut() throws Exception {
+		return this.writeOut(this.path);
 	}
 	
 	/**
 	 * Writes the tasks to disk to a specified directory instead of the default.
 	 * @param path the directory path to write the tasks to
+	 * @return the number of tasks actually written to disk
 	 * @throws Exception on any error
 	 */
-	public void writeOut(File path) throws Exception {
-		this.writeOutRecurse(this.path, this.getRoot());
+	public int writeOut(File path) throws Exception {
+		return this.writeOutRecurse(this.path, this.getRoot());
 	}
 	
 	/**
@@ -328,14 +330,17 @@ public class TaskStore implements TreeModelListener {
 	 * Writes the tasks in given node and all its children to disk recursively.
 	 * @param path the path to write to
 	 * @param node the node to write out
+	 * @return the number of tasks actually written to disk
 	 * @throws Exception on IO errors
 	 */
-	private void writeOutRecurse(File path, TaskNode node) throws Exception {
+	private int writeOutRecurse(File path, TaskNode node) throws Exception {
+		int numSaved = 0;
+		
 		/* get the user object from the node */
 		Task task = node.getTask();
 
 		/* Don't save the root node */
-		if (!node.isRoot())	((FileSystemTask)task).save(path);
+		if (!node.isRoot())	if (((FileSystemTask)task).save(path)) numSaved++;
 		
 		/* recurse for each of the child nodes */
 		for (int i = 0; i < node.getChildCount(); i++) {
@@ -345,8 +350,10 @@ public class TaskStore implements TreeModelListener {
 			/* make sure the file system name has been set for the node */
 			this.setFileSystemName(child);
 			File newPath = new File(path, ((FileSystemTask)childTask).getPlainName());
-			this.writeOutRecurse(newPath, child);
+			numSaved += this.writeOutRecurse(newPath, child);
 		}
+		
+		return numSaved;
 	}
 
 	/**

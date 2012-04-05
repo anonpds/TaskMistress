@@ -116,14 +116,15 @@ public class FileSystemTask extends Task {
 	/**
 	 * Saves the Task to disk.
 	 * @param path the path to save the task to
+	 * @return true if the task was saved, false if it hasn't changed since last save and thus wasn't written out
 	 * @throws Exception on IO errors
 	 */
-	public void save(File path) throws Exception {
+	public boolean save(File path) throws Exception {
 		/* create the path if it doesn't exist */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("can not create " + path);
 
 		/* write the node only if dirty */
-		if (!this.isDirty()) return;
+		if (!this.isDirty()) return false;
 		
 		/* write the meta data in new format only */
 		File metaFile = new File(path, META_FILE);
@@ -145,6 +146,7 @@ public class FileSystemTask extends Task {
 		
 		/* clear the dirty flag, since the task was just saved */
 		this.setDirty(false);
+		return true;
 	}
 
 	/**
