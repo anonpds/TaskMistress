@@ -13,10 +13,14 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.text.DateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.event.DocumentEvent;
@@ -67,9 +71,12 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 	/** Combo box that displays the status of the task (done, undone or default). */
 	private JComboBox statusBox;
 	
+	/** JButton for setting the due date of a task. */
+	private JButton dueButton;
+	
 	/** statusBox choices. */
 	private String[] comboBoxChoices = { DEFAULT_TEXT, DONE_TEXT, UNDONE_TEXT };
-
+	
 	/** TreeModel that contains the task. Informed of changes to task status. */
 	private DefaultTreeModel treeModel;
 
@@ -85,11 +92,18 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 		this.statusBar = new JLabel("No task selected.");
 		this.statusBox = new JComboBox(this.comboBoxChoices);
 		this.statusBox.addActionListener(this);
+		this.dueButton = new JButton("Due");
+		this.dueButton.setEnabled(false);
+		this.dueButton.addActionListener(this);
+
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.add(this.dueButton);
+		buttonPanel.add(this.statusBox);
 
 		JPanel statusPanel = new JPanel(new BorderLayout());
 		statusPanel.add(this.statusBar, BorderLayout.WEST);
-		statusPanel.add(this.statusBox, BorderLayout.EAST);
-
+		statusPanel.add(buttonPanel, BorderLayout.EAST);
+		
 		this.setLayout(new BorderLayout());
 		this.add(statusPanel, BorderLayout.NORTH);
 		this.add(new JScrollPane(this.editor), BorderLayout.CENTER);
@@ -118,6 +132,7 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 			this.statusBar.setText("No task selected.");
 			this.editor.close("");
 			this.setStatusBox(Task.STATUS_DEFAULT);
+			this.dueButton.setEnabled(false);
 		} else {
 			this.task = task;
 			this.node = node;
@@ -125,6 +140,7 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 			this.setDirty(false);
 			this.setStatusBox(task.getStatus());
 			this.updateStatus();
+			this.dueButton.setEnabled(true);
 		}
 	}
 
@@ -159,8 +175,17 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 		Date date = new Date(this.task.getCreationTime());
 		DateFormat format = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT);
 		
+		/* the due date */
+		String due;
+		if (!this.task.isDue()) due = "No due date.";
+		else {
+			Calendar cal = GregorianCalendar.getInstance();
+			cal.setTimeInMillis(this.task.getDueDate());
+			due = "Task due " + format.format(cal.getTime());
+		}
+			
 		/* set the text */
-		this.statusBar.setText("Created: " + format.format(date) + edited);
+		this.statusBar.setText("Created: " + format.format(date) + edited + " :: " + due);
 	}
 
 	/** Handles changes in the editor component; sets the dirty flag and updates the status text. */
@@ -228,10 +253,18 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 		/* do nothing if no task active */
 		if (this.task == null) return;
 		
-		/* change the task status */
-		String selected = (String) this.statusBox.getSelectedItem();
-		if (selected == DEFAULT_TEXT) this.setTaskStatus(Task.STATUS_DEFAULT);
-		else if (selected == DONE_TEXT) this.setTaskStatus(Task.STATUS_DONE);
-		else if (selected == UNDONE_TEXT) this.setTaskStatus(Task.STATUS_UNDONE);
+		if (event.getSource() == this.statusBox) {
+			/* statusBox action; change the task status */
+			String selected = (String) this.statusBox.getSelectedItem();
+			if (selected == DEFAULT_TEXT) this.setTaskStatus(Task.STATUS_DEFAULT);
+			else if (selected == DONE_TEXT) this.setTaskStatus(Task.STATUS_DONE);
+			else if (selected == UNDONE_TEXT) this.setTaskStatus(Task.STATUS_UNDONE);
+		} else if (event.getSource() == this.dueButton) {
+			/* dueButton action; change the due status */
+			JOptionPane.showMessageDialog(this,
+			                              "Setting due date not supported yet.",
+			                              "Oops!",
+			                              JOptionPane.ERROR_MESSAGE);
+		}
 	}
 }

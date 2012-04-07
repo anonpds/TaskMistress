@@ -83,6 +83,16 @@ public class Configuration {
 	}
 	
 	/**
+	 * Adds a boolean variable to the list of configuration variables.
+	 * @param name the name of the variable
+	 * @param value the value of the variable
+	 * @return true if a variable with the same name already existed and was overwritten, false if a variable was added
+	 */
+	public boolean add(String name, boolean value) {
+		return this.map.put(name, Boolean.toString(value)) != null;		
+	}
+	
+	/**
 	 * Returns the value of the named variable.
 	 * @param name the name of variable to query
 	 * @return the value of the variable or null if no such variable in the configuration

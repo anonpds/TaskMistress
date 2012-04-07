@@ -29,6 +29,12 @@ public class FileSystemTask extends Task {
 	/** Configuration variable for the task status. */
 	private static final String CONFIG_STATUS = "status";
 
+	/** The configuration variable of due state. */
+	private static final String CONFIG_DUE = "due_exists";
+
+	/** The configuration variable of due date. */
+	private static final String CONFIG_DUE_DATE = "due_date";
+
 	/** The name of the file that contains task meta data. */
 	private static final String META_FILE = "task.cfg";
 
@@ -74,7 +80,7 @@ public class FileSystemTask extends Task {
 		task.setPlainName(plainName);
 
 		/* read the meta data; if the meta data file does not exist, the path does not contain a task */
-		String name = null, date = null, status;
+		String name = null, date = null, status, dueString, dueDateString;
 		File metaFile = new File(path, META_FILE);
 		if (!metaFile.exists()) return null;
 
@@ -83,16 +89,23 @@ public class FileSystemTask extends Task {
 		name = conf.get(CONFIG_NAME);
 		date = conf.get(CONFIG_CREATION_TIME);
 		status = conf.get(CONFIG_STATUS);
+		if ((dueString = conf.get(CONFIG_DUE)) == null) dueString = "false";
+		if ((dueDateString = conf.get(CONFIG_DUE_DATE)) == null) dueDateString = "0";
 		
 		/* validate and parse the variables */
 		if (name == null) throw new Exception("no name in metadata " + metaFile.getPath());
 		if (date == null) throw new Exception("no date in metadata " + metaFile.getPath());
 		long timeStamp = Long.parseLong(date);
+		boolean due = Boolean.parseBoolean(dueString);
+		long dueDate = Long.parseLong(dueDateString);
+		
 
-		/* set the name, creation date and status */
+		/* set the task parameters */
 		task.setName(name);
 		task.setCreationTime(timeStamp);
 		try { task.setStatus(Short.parseShort(status)); } catch (Exception e) {}
+		task.setDue(due);
+		task.setDueDate(dueDate);
 		
 		/* read the task text if it exists */
 		File textFile = new File(path, TEXT_FILE);
@@ -132,6 +145,8 @@ public class FileSystemTask extends Task {
 		conf.add(CONFIG_NAME, this.getName());
 		conf.add(CONFIG_CREATION_TIME, this.getCreationTime());
 		conf.add(CONFIG_STATUS, this.getStatus());
+		conf.add(CONFIG_DUE, this.isDue());
+		conf.add(CONFIG_DUE_DATE, this.getDueDate());
 		conf.store(metaFile);
 		
 		/* write the task text, if any */

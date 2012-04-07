@@ -26,6 +26,12 @@ class Task {
 	/** Tells whether the task has changed since last write to disk. */
 	private boolean dirty;
 	
+	/** Tells whether the task has a due date or not. Only relevant when status is STATUS_DONE or STATUS_UNDONE. */
+	private boolean dueExists = false;
+	
+	/** The due date and time in the Java millisecond format. */
+	private long due = 0L;
+	
 	/** The name of the task. */
 	private String name;
 	
@@ -83,6 +89,44 @@ class Task {
 	 */
 	public void setCreationTime(long timeStamp) {
 		this.timeStamp = timeStamp;
+	}
+	
+	/**
+	 * Gets the due date of the task.
+	 * @return due date of the task in Java millisecond format
+	 */
+	public long getDueDate() {
+		return this.due;
+	}
+	
+	/**
+	 * Sets the due date of a task.
+	 * @param due the new due date of the task in Java millisecond format
+	 */
+	public void setDueDate(long due) {
+		if (this.due != due) {
+			this.due = due;
+			this.setDirty(true);
+		}
+	}
+	
+	/**
+	 * Tells whether the task has a due date or not.
+	 * @return true if the task has a due date, false if not
+	 */
+	public boolean isDue() {
+		return this.dueExists;
+	}
+	
+	/**
+	 * Sets the due status of the task.
+	 * @param due true if the task is to have a due date, false if not
+	 */
+	public void setDue(boolean due) {
+		if (this.dueExists != due) {
+			this.dueExists = due;
+			this.setDirty(true);
+		}
 	}
 
 	/**
