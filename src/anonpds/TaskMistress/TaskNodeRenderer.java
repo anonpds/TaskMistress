@@ -33,14 +33,8 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 	/** Resource/file name of the icon that represents default task. */
 	private static final String DEFAULT_ICON_FILE = "res/default.gif";
 	
-	/** Resource/file name of the icon that represents task folder with all tasks finished. */
-	private static final String DONE_FOLDER_ICON_FILE = "res/done-folder.gif";
-	
-	/** Resource/file name of the icon that represents task folder with some tasks unfinished. */
-	private static final String UNDONE_FOLDER_ICON_FILE = "res/undone-folder.gif";
-
 	/** Resource/file name of the icon that represents default task folder. */
-	private static final String DEFAULT_FOLDER_ICON_FILE = "res/folder.gif";
+	private static final String FOLDER_ICON_FILE = "res/folder.gif";
 	
 	/** Icon that represents done task. */
 	private Icon doneIcon;
@@ -51,14 +45,8 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 	/** Icon that represents default task without done/undone status. */
 	private Icon defaultIcon;
 
-	/** Icon that represents folder with all tasks done. */
-	private Icon doneFolderIcon;
-
-	/** Icon that represents folder with some tasks undone. */
-	private Icon undoneFolderIcon;
-
 	/** Icon that represents folder with only default tasks. */
-	private Icon defaultFolderIcon;
+	private Icon folderIcon;
 	
 	/** Default constructor. */
 	public TaskNodeRenderer() {
@@ -89,9 +77,7 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 		this.doneIcon = loadIcon(DONE_ICON_FILE);
 		this.undoneIcon = loadIcon(UNDONE_ICON_FILE);
 		this.defaultIcon = loadIcon(DEFAULT_ICON_FILE);
-		this.doneFolderIcon = loadIcon(DONE_FOLDER_ICON_FILE);
-		this.undoneFolderIcon = loadIcon(UNDONE_FOLDER_ICON_FILE);
-		this.defaultFolderIcon = loadIcon(DEFAULT_FOLDER_ICON_FILE);
+		this.folderIcon = loadIcon(FOLDER_ICON_FILE);
 	}
 	
 	@Override
@@ -109,9 +95,9 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 		
 		if (node.getChildCount() > 0) {
 			switch (task.getStatus()) {
-			case Task.STATUS_DONE: icon = this.doneFolderIcon; break;
-			case Task.STATUS_UNDONE: icon = this.undoneFolderIcon; break;
-			case Task.STATUS_DEFAULT: icon = this.defaultFolderIcon; break;
+			case Task.STATUS_DONE: icon = this.doneIcon; break;
+			case Task.STATUS_UNDONE: icon = this.undoneIcon; break;
+			case Task.STATUS_DEFAULT: icon = this.folderIcon; break;
 			}
 		} else {
 			switch (task.getStatus()) {

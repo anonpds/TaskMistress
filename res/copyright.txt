@@ -1,12 +1,20 @@
-These icons are from the "Mini" icon-set at famfamfam.com with some changes:
+These icons are from the following sources:
 
-  * default.gif: renamed page.gif
-  * done.gif: renamed icon_accept.gif
-  * undone.gif: renamed action_stop.gif
-  * folder.gif: original
-  * done-folder.gif: combined folder.gif and shrunk icon_accept.gif
-  * undone-folder.gif: combined folder.gif and shrunk action_stop.gif
+  * default.gif: original (see below)
+  * done.gif: original (see below)
+  * undone.gif: original (see below)
+  * folder.gif: from the Mini icon-set famfamfam.com 
 
-The original icons are "available for free use for any purpose" (source:
-http://famfamfam.com/lab/icons/mini/) and the same applies to the changes
-I have made to the original icons.
+The 'folder.gif' icon is "available for free use for any purpose (source:
+http://famfamfam.com/lab/icons/mini/).
+
+***
+
+The other icons were created in 2012 by anonymous and come under
+the following license:
+
+  To the extent possible under law, the author(s) have dedicated all
+  copyright and related and neighbouring rights to these images to the
+  public domain worldwide.
+ 
+ Full license at <http://creativecommons.org/publicdomain/zero/1.0/>.
