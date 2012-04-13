@@ -25,6 +25,8 @@ public class TaskStore implements TreeModelListener {
 	/** Name of the file that contains task tree meta data. */
 	private static final String META_FILE = "meta.cfg";
 	
+	private static final String LOCK_FILE = "tree.lck";
+
 	/** Maximum length of a plain name, that is used when saving tasks to file system. */
 	private static final int MAX_PLAIN_NAME_LEN = 12;
 
@@ -50,12 +52,18 @@ public class TaskStore implements TreeModelListener {
 	 * Creates a new task store from the specified directory. The directory is created if it doesn't exist and an
 	 * empty task store is initialised.
 	 * @param path the directory that stores the task tree
+	 * @param ignoreLock set to true to ignore lock file, false not to ignore it
+	 * @throws TaskTreeLockedException if the task tree is locked (already open)
 	 * @throws Exception on any IO errors
 	 */
-	public TaskStore(File path) throws Exception {
+	public TaskStore(File path, boolean ignoreLock) throws TaskTreeLockedException, Exception {
 		/* make sure the path exists or can at least be created */
 		if (!path.exists() && !path.mkdirs()) throw new Exception("cannot create '" + path.getPath() + "'");
 		this.path = path;
+		
+		/* make sure the lock file does not exist */
+		File lockFile = new File(path, LOCK_FILE);
+		if (!ignoreLock && lockFile.exists()) throw new TaskTreeLockedException();
 		
 		/* read the task tree meta data */
 		File metaFile = new File(path, META_FILE);
@@ -78,6 +86,10 @@ public class TaskStore implements TreeModelListener {
 		for (File file : files) {
 			if (file.isDirectory()) this.loadTaskDirectory((TaskNode) this.treeModel.getRoot(), file);
 		}
+		
+		/* create the lock file to indicate that the task tree is open; set the file to be deleted on exit */
+		lockFile.createNewFile();
+		lockFile.deleteOnExit();
 	}
 	
 	/**
@@ -86,11 +98,15 @@ public class TaskStore implements TreeModelListener {
 	 */
 	public void close() throws Exception {
 		/* write the configuration */
-		File metaFile = new File(path, META_FILE);
+		File metaFile = new File(this.path, META_FILE);
 		this.conf.store(metaFile);
 		
 		/* write the tasks */
 		this.writeOut();
+		
+		/* remove the lock file */
+		File lockFile = new File(this.path, LOCK_FILE);
+		lockFile.delete();
 	}
 	
 	/**
