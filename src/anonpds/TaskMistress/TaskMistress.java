@@ -50,10 +50,12 @@ public class TaskMistress {
 	/**
 	 * Launches an instance of the program at the given file system path.
 	 * @param path the path to the task tree to edit
+	 * @param ignoreLock set to true to ignore the lock file, false not to ignore it
+	 * @throws TaskTreeLockedException if the task tree is locked (already open)
 	 * @throws Exception when the TaskStore cannot be initialised
 	 */
-	public TaskMistress(File path) throws Exception {
-		TaskStore store = new TaskStore(path);
+	public TaskMistress(File path, boolean ignoreLock) throws TaskTreeLockedException, Exception {
+		TaskStore store = new TaskStore(path, ignoreLock);
 		new MainWindow(store);
 	}
 	
@@ -205,20 +207,36 @@ public class TaskMistress {
 			}
 		}
 		
-		/* launch TaskMistress from the given path */
+		/* create a new config, if no config exists */
 		if (config == null) config = new Configuration();
-		try {
-			addToHistory(config, defaultPath);
-			new TaskMistress(defaultPath);
-			
-			/* if no default, make the used path default */
-			if (config.get(CONFIG_DEFAULT) == null) config.add(CONFIG_DEFAULT, defaultPath.getPath());
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(null,
-			                              "Failed to initialize the program: " + e.getMessage(),
-			                              PROGRAM_NAME + " " + PROGRAM_VERSION,
-			                              JOptionPane.ERROR_MESSAGE);
-			System.exit(1);
+		
+		/* launch TaskMistress from the given path; done in a loop to catch errors, which the user may ignore and
+		 * open the tree anyway  */
+		boolean done = false, ignoreLock = false;
+		while (!done) {
+			try {
+				addToHistory(config, defaultPath);
+				new TaskMistress(defaultPath, ignoreLock);
+				
+				/* if no default, make the used path default */
+				if (config.get(CONFIG_DEFAULT) == null) config.add(CONFIG_DEFAULT, defaultPath.getPath());
+			} catch (TaskTreeLockedException e) {
+				/* the tree is locked; ask whether to open it anyway */
+				int choice = JOptionPane.showConfirmDialog(null,
+				                              "Warning: the task tree may already be open! Proceed anyway?",
+				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
+				                              JOptionPane.YES_NO_OPTION);
+				
+				/* on yes, open the tree anyway, on no just quit the program */
+				if (choice == JOptionPane.YES_OPTION) ignoreLock = true;
+				else System.exit(1);
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null,
+				                              "Failed to initialize the program: " + e.getMessage(),
+				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
+				                              JOptionPane.ERROR_MESSAGE);
+				System.exit(1);
+			}
 		}
 		
 		/* exited; save the configuration */
