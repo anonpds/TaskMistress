@@ -33,7 +33,7 @@ public class TaskMistress {
 	public static final String PROGRAM_NAME = "Task Mistress";
 
 	/** The current version of the program. */
-	public static final String PROGRAM_VERSION = "0.1d";
+	public static final String PROGRAM_VERSION = "0.1e";
 
 	/** The name of the variable that contains the default task tree path. */
 	public static final String CONFIG_DEFAULT = "defaultTree";
@@ -217,6 +217,9 @@ public class TaskMistress {
 			try {
 				addToHistory(config, defaultPath);
 				new TaskMistress(defaultPath, ignoreLock);
+				
+				/* if the tree was opened successfully, the loop is done */
+				done = true;
 				
 				/* if no default, make the used path default */
 				if (config.get(CONFIG_DEFAULT) == null) config.add(CONFIG_DEFAULT, defaultPath.getPath());
