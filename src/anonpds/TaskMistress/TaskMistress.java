@@ -235,7 +235,7 @@ public class TaskMistress {
 				else System.exit(1);
 			} catch (Exception e) {
 				JOptionPane.showMessageDialog(null,
-				                              "Failed to initialize the program: " + e.getMessage(),
+				                              "Task tree load failed: " + e.getMessage(),
 				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
 				                              JOptionPane.ERROR_MESSAGE);
 				System.exit(1);
