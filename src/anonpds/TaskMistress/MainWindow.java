@@ -332,15 +332,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Called by the tool bar button listener when the Open button has been pressed.
 	 */
 	private void openButtonPressed() {
-		/* CRITICAL do this through the main class:
-		 * TaskMistress.openTaskTree();
-		 */
-		/* show the path selection dialog and open the new Task Mistress window, if the user selected a path */
-		//File path = TaskMistress.showPathDialog();
-		//if (path != null) {
-		//	/* TODO this does not allow opening the tree, if it is locked */
-		//	try { new TaskMistress(path, false); } catch (Exception e) { /* TODO error */ }
-		//}
+		TaskMistress.openTaskTree();
 	}
 
 	/** Opens the cell editor for the currently selected node. */
