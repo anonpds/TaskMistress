@@ -1,13 +1,14 @@
 Versions
 ========
 
-0.??:
-
-  * added status messages to status bar
-
 
 0.1 Series
 ----------
+
+0.1e: 13th April 2012
+
+  * added status messages to status bar
+  * added lock file to avoid opening same task tree twice
 
 0.1d: 1st April 2012
 
