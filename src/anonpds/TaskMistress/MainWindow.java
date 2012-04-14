@@ -43,8 +43,6 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-/* TODO add support for checked items; need to implement a new CellRenderer to show the additional icons. */
-
 /**
  * Implements the main window of the Task Mistress program.
  * @author anonpds <anonpds@gmail.com>
@@ -333,14 +331,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Opens another task tree in new Task Mistress window. 
 	 * Called by the tool bar button listener when the Open button has been pressed.
 	 */
-	/* TODO this should be done through the main class */
 	private void openButtonPressed() {
+		/* CRITICAL do this through the main class:
+		 * TaskMistress.openTaskTree();
+		 */
 		/* show the path selection dialog and open the new Task Mistress window, if the user selected a path */
-		File path = TaskMistress.showPathDialog();
-		if (path != null) {
-			/* TODO this does not allow opening the tree, if it is locked */
-			try { new TaskMistress(path, false); } catch (Exception e) { /* TODO error */ }
-		}
+		//File path = TaskMistress.showPathDialog();
+		//if (path != null) {
+		//	/* TODO this does not allow opening the tree, if it is locked */
+		//	try { new TaskMistress(path, false); } catch (Exception e) { /* TODO error */ }
+		//}
 	}
 
 	/** Opens the cell editor for the currently selected node. */
@@ -409,7 +409,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				try {
 					this.store.writeOut(node);
 					this.statusBar.setText(node.getTask().getName() + " written to disk.");
-				} catch (Exception e) { /* TODO error */ }
+				} catch (Exception e) { /* TODO error; call a general error function? */ }
 			} else this.statusBar.setText(" ");
 		}
 		
@@ -586,7 +586,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		 * @param flavor the flavour of the data to receive
 		 * @return the data object in the given flavour
 		 */
-		/* TODO is this actually needed? Or perhaps getNode() should be removed and this used instead? */
 		@Override
 		public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
 			if (!this.isDataFlavorSupported(flavor)) throw new UnsupportedFlavorException(flavor);
