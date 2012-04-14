@@ -93,6 +93,18 @@ public class TaskStore implements TreeModelListener {
 	}
 	
 	/**
+	 * Sets another path for the task store. Note: this will dirty all the tasks in the tree, causing all of them to
+	 * be saved to disk when the store is closed.
+	 * @param path the new path for the task store
+	 * @throws Exception if the path does not exist and cannot be created
+	 */
+	public void setPath(File path) throws Exception {
+		if (!path.exists() && !path.mkdirs()) throw new Exception("cannot create '" + path.getPath() + "'");
+		this.path = path;
+		this.getRoot().setAllDirty();
+	}
+	
+	/**
 	 * Closes the task store; writes out the configuration and any changed tasks. 
 	 * @throws Exception on error 
 	 */

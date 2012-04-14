@@ -140,10 +140,41 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* write the window size */
 		this.store.setVariable(CONFIG_WINDOW_SIZE, Util.dimensionString(this.getWidth(), this.getHeight()));
 		
-		/* close the task store */
-		try {
-			this.store.close();
-		} catch (Exception e) { /* TODO error */ }
+		/* close the task store: this is done in a loop to handle errors */
+		boolean promptDirectory = false;
+		while (true) {
+			try {
+				/* if the saving failed before and user chose to try another directory, prompt for it */
+				if (promptDirectory) {
+					File path = TaskMistress.showPathDialog();
+					if (path != null) this.store.setPath(path);
+				}
+				
+				/* close the task store, saving all dirty tasks */
+				this.store.close();
+				
+				/* if no errors, break the loop */
+				break;
+			} catch (Exception e) {
+				/* error: prompt the user whether to try again */
+				int choice = JOptionPane.showConfirmDialog(this,
+				                                           "Saving the task tree failed. Try again?",
+				                                           "Error!",
+				                                           JOptionPane.YES_NO_OPTION);
+				if (choice == JOptionPane.YES_OPTION) continue;
+				
+				/* prompt the user whether to save the task tree in another place */
+				choice = JOptionPane.showConfirmDialog(this,
+				                              "Do you want to save the task tree to another directory?",
+				                              "Error!",
+				                              JOptionPane.YES_NO_OPTION);
+				
+				/* if "no" is selected, just exit without trying to save again */ 
+				if (choice != JOptionPane.YES_OPTION) break;
+				/* "yes" selected: set the directory to be prompted */
+				promptDirectory = true;
+			}
+		}
 		
 		/* make sure the task store is collected */
 		this.store = null;
@@ -324,7 +355,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Opens another task tree in new Task Mistress window. 
 	 * Called by the tool bar button listener when the Open button has been pressed.
 	 */
-	/* TODO this should be done through the main class */
+	/* CRITICAL this should be done through the main class */
 	private void openButtonPressed() {
 		/* show the path selection dialog and open the new Task Mistress window, if the user selected a path */
 		File path = TaskMistress.showPathDialog();
@@ -379,19 +410,8 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		public void windowClosing(WindowEvent event) {
 			/* update the currently open task */
 			if (this.window.taskView.getTask() != null) this.window.taskView.updateText();
-			
-			/* write the data */
-			try {
-				this.window.store.writeOut();
-			} catch (Exception e) {
-				String msg = "Could not save the tasks (" + e.getMessage() + "); exit anyway?";
-				int input = JOptionPane.showConfirmDialog(this.window,
-				                                          msg,
-				                                          "Error!",
-				                                          JOptionPane.YES_NO_OPTION,
-				                                          JOptionPane.ERROR_MESSAGE);
-				if (input == JOptionPane.NO_OPTION) return;
-			}
+
+			/* call the function to save the task data and close the window */
 			this.window.closeImmediately();
 		}
 	}

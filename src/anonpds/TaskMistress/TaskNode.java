@@ -98,4 +98,12 @@ public class TaskNode extends DefaultMutableTreeNode {
 		}
 		return(nodes);
 	}
+	
+	/** Sets all the nodes in the tree dirty. */
+	public void setAllDirty() {
+		if (this.getTask() != null) this.getTask().setDirty(true);
+		for (int i = 0; i < this.getChildCount(); i++) {
+			((TaskNode)this.getChildAt(i)).setAllDirty();
+		}
+	}
 }
