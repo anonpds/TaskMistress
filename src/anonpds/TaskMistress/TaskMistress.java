@@ -16,7 +16,11 @@ import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-/* CRITICAL add a debugger; something that stores debug information and outputs it in case of an error */
+/* CRITICAL add a debugger; something that stores debug information and outputs it in case of an error.
+ * The debugger should only be called during errors and the debugger will make a large dump of data: the full task
+ * tree, the configuration, what went wrong (the exception), an optional message from the caller, the task tree path,
+ * etc.
+ */
 
 /**
  * A class that runs the TaskMistress program.
@@ -73,7 +77,52 @@ public class TaskMistress {
 		chooser.showOpenDialog(null);
 		return(chooser.getSelectedFile());
 	}
+	
+	/** Prompts user for a task tree to open and opens it. */
+	public static void openTaskTree() {
+		File path = TaskMistress.showPathDialog();
+		if (path != null) openTaskTree(path, true);
+	}
 
+	/**
+	 * Opens the specified task tree.
+	 * @param path the directory path of the task tree to open
+	 * @param secondary set to true if this is a secondary open done from an existing task tree window, false the
+	 * program is just starting
+	 */
+	private static void openTaskTree(File path, boolean secondary) {
+		boolean ignoreLock = false;
+		while (true) {
+			try {
+				addToHistory(config, path);
+				new TaskMistress(path, ignoreLock);
+
+				/* if no default, make the used path default */
+				if (!secondary && config.get(CONFIG_DEFAULT) == null) config.add(CONFIG_DEFAULT, path.getPath());
+				
+				/* if the tree was opened successfully, the loop is done */
+				break;
+			} catch (TaskTreeLockedException e) {
+				/* the tree is locked; ask whether to open it anyway */
+				int choice = JOptionPane.showConfirmDialog(null,
+				                              "Warning: the task tree may already be open! Proceed anyway?",
+				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
+				                              JOptionPane.YES_NO_OPTION);
+				
+				/* on yes, open the tree anyway, on no just quit the program */
+				if (choice == JOptionPane.YES_OPTION) ignoreLock = true;
+				else break;
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null,
+				                              "Task tree load failed: " + e.getMessage(),
+				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
+				                              JOptionPane.ERROR_MESSAGE);
+				break;
+			}
+		}
+	}
+
+	
 	/**
 	 * Returns the configuration file. Three environment variables are examined for the directory that contains the
 	 * configuration file in the following order: XDG_CONFIG_HOME, HOME and APPDATA. If HOME is used, a directory
@@ -120,7 +169,6 @@ public class TaskMistress {
 	 * @param path the path to add
 	 */
 	private static void addToHistory(Configuration conf, File path) {
-		/* TODO use absolute paths if possible */
 		int i;
 		for (i = 0; i < HISTORY_SIZE; i++) {
 			String name = CONFIG_HISTORY + i;
@@ -163,7 +211,12 @@ public class TaskMistress {
 			/* create the conf file path if necessary */
 			File path = confFile.getParentFile();
 			if (!path.exists()) path.mkdirs();
-			try { config.store(confFile); } catch (Exception e) { /* TODO errors */ }
+			try { config.store(confFile); } catch (Exception e) {
+				JOptionPane.showMessageDialog(null,
+				                              "Could not save configuration: " + e.getMessage(),
+				                              "Error!",
+				                              JOptionPane.ERROR_MESSAGE);
+			}
 		}
 	}
 	
@@ -187,7 +240,12 @@ public class TaskMistress {
 		File defaultPath = null;
 		
 		/* try to parse it if it exists and extract the default task tree */
-		try { config = Configuration.parse(confFile); } catch (Exception e) { /* TODO error */ }
+		try { config = Configuration.parse(confFile); } catch (Exception e) {
+			JOptionPane.showMessageDialog(null,
+			                              "Failed to parse " + confFile.getPath() + ": " + e.getMessage(),
+			                              "Warning",
+			                              JOptionPane.WARNING_MESSAGE);
+		}
 		if (config != null && config.get(CONFIG_DEFAULT) != null) defaultPath = new File(config.get(CONFIG_DEFAULT));
 
 		/* the path can also be set by command line argument, which overrides config */
@@ -209,38 +267,9 @@ public class TaskMistress {
 		
 		/* create a new config, if no config exists */
 		if (config == null) config = new Configuration();
-		
-		/* launch TaskMistress from the given path; done in a loop to catch errors, which the user may ignore and
-		 * open the tree anyway  */
-		boolean done = false, ignoreLock = false;
-		while (!done) {
-			try {
-				addToHistory(config, defaultPath);
-				new TaskMistress(defaultPath, ignoreLock);
-				
-				/* if the tree was opened successfully, the loop is done */
-				done = true;
-				
-				/* if no default, make the used path default */
-				if (config.get(CONFIG_DEFAULT) == null) config.add(CONFIG_DEFAULT, defaultPath.getPath());
-			} catch (TaskTreeLockedException e) {
-				/* the tree is locked; ask whether to open it anyway */
-				int choice = JOptionPane.showConfirmDialog(null,
-				                              "Warning: the task tree may already be open! Proceed anyway?",
-				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
-				                              JOptionPane.YES_NO_OPTION);
-				
-				/* on yes, open the tree anyway, on no just quit the program */
-				if (choice == JOptionPane.YES_OPTION) ignoreLock = true;
-				else System.exit(1);
-			} catch (Exception e) {
-				JOptionPane.showMessageDialog(null,
-				                              "Failed to initialize the program: " + e.getMessage(),
-				                              PROGRAM_NAME + " " + PROGRAM_VERSION,
-				                              JOptionPane.ERROR_MESSAGE);
-				System.exit(1);
-			}
-		}
+
+		/* open the task tree */
+		openTaskTree(defaultPath, false);
 		
 		/* exited; save the configuration */
 		saveConfiguration();

@@ -43,8 +43,6 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 
-/* TODO add support for checked items; need to implement a new CellRenderer to show the additional icons. */
-
 /**
  * Implements the main window of the Task Mistress program.
  * @author anonpds <anonpds@gmail.com>
@@ -56,9 +54,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 
 	/** Text for the button that removes a task (tree). */
 	private static final String REMOVE_BUTTON_TEXT = "Delete";
-
-	/** Text for the button that saves all the tasks to disk. */
-	private static final String SAVE_BUTTON_TEXT = "Save";
 
 	/** Text for the button that opens another task tree. */
 	private static final String OPEN_BUTTON_TEXT = "Open";
@@ -86,9 +81,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	
 	/** Button that can be used to remove tasks. */
 	private JButton removeButton;
-	
-	/** Button that saves the changed tasks to disk. */
-	private JButton saveButton;
 	
 	/** Button that opens another task tree in a new Task Mistress window. */
 	private JButton openButton;
@@ -124,9 +116,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		
 		/* try to set the window size from task tree meta data */
-		Dimension d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
-		if (d != null) this.setSize(d);
-		else this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+		Dimension d = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+		try {
+			d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(this,
+			                              "Bad window size in configuration (" + e.getMessage() + "); using the default",
+			                              "Warning",
+			                              JOptionPane.WARNING_MESSAGE);
+		}
+		this.setSize(d);
 
 		/* build the UI */
 		this.buildUI();
@@ -140,10 +139,41 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* write the window size */
 		this.store.setVariable(CONFIG_WINDOW_SIZE, Util.dimensionString(this.getWidth(), this.getHeight()));
 		
-		/* close the task store */
-		try {
-			this.store.close();
-		} catch (Exception e) { /* TODO error */ }
+		/* close the task store: this is done in a loop to handle errors */
+		boolean promptDirectory = false;
+		while (true) {
+			try {
+				/* if the saving failed before and user chose to try another directory, prompt for it */
+				if (promptDirectory) {
+					File path = TaskMistress.showPathDialog();
+					if (path != null) this.store.setPath(path);
+				}
+				
+				/* close the task store, saving all dirty tasks */
+				this.store.close();
+				
+				/* if no errors, break the loop */
+				break;
+			} catch (Exception e) {
+				/* error: prompt the user whether to try again */
+				int choice = JOptionPane.showConfirmDialog(this,
+				                                           "Saving the task tree failed. Try again?",
+				                                           "Error!",
+				                                           JOptionPane.YES_NO_OPTION);
+				if (choice == JOptionPane.YES_OPTION) continue;
+				
+				/* prompt the user whether to save the task tree in another place */
+				choice = JOptionPane.showConfirmDialog(this,
+				                              "Do you want to save the task tree to another directory?",
+				                              "Error!",
+				                              JOptionPane.YES_NO_OPTION);
+				
+				/* if "no" is selected, just exit without trying to save again */ 
+				if (choice != JOptionPane.YES_OPTION) break;
+				/* "yes" selected: set the directory to be prompted */
+				promptDirectory = true;
+			}
+		}
 		
 		/* make sure the task store is collected */
 		this.store = null;
@@ -175,7 +205,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* set up the tool bar and its buttons */
 		this.addButton = new JButton(ADD_BUTTON_TEXT);
 		this.removeButton = new JButton(REMOVE_BUTTON_TEXT);
-		this.saveButton = new JButton(SAVE_BUTTON_TEXT);
 		this.openButton = new JButton(OPEN_BUTTON_TEXT);
 		this.renameButton = new JButton(RENAME_BUTTON_TEXT);
 		this.settingsButton = new JButton(SETTINGS_BUTTON_TEXT);
@@ -183,7 +212,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.toolBar = new JToolBar();
 		this.toolBar.add(addButton);
 		this.toolBar.add(removeButton);
-		this.toolBar.add(saveButton);
 		this.toolBar.add(openButton);
 		this.toolBar.add(renameButton);
 		this.toolBar.add(settingsButton);
@@ -191,7 +219,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* set the action listeners; the same action listener is used for all buttons */
 		this.addButton.addActionListener(this);
 		this.removeButton.addActionListener(this);
-		this.saveButton.addActionListener(this);
 		this.openButton.addActionListener(this);
 		this.renameButton.addActionListener(this);
 		this.settingsButton.addActionListener(this);
@@ -308,30 +335,11 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	}
 
 	/**
-	 * Saves the task tree to disk.
-	 * Called by the tool bar button listener when the Save button has been pressed.
-	 */
-	private void saveButtonPressed() {
-		try {
-			int saved = this.store.writeOut();
-			this.statusBar.setText(saved + " tasks written to disk.");
-		} catch (Exception e) {
-			// TODO errors
-		}
-	}
-
-	/**
 	 * Opens another task tree in new Task Mistress window. 
 	 * Called by the tool bar button listener when the Open button has been pressed.
 	 */
-	/* TODO this should be done through the main class */
 	private void openButtonPressed() {
-		/* show the path selection dialog and open the new Task Mistress window, if the user selected a path */
-		File path = TaskMistress.showPathDialog();
-		if (path != null) {
-			/* TODO this does not allow opening the tree, if it is locked */
-			try { new TaskMistress(path, false); } catch (Exception e) { /* TODO error */ }
-		}
+		TaskMistress.openTaskTree();
 	}
 
 	/** Opens the cell editor for the currently selected node. */
@@ -380,18 +388,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			/* update the currently open task */
 			if (this.window.taskView.getTask() != null) this.window.taskView.updateText();
 			
-			/* write the data */
-			try {
-				this.window.store.writeOut();
-			} catch (Exception e) {
-				String msg = "Could not save the tasks (" + e.getMessage() + "); exit anyway?";
-				int input = JOptionPane.showConfirmDialog(this.window,
-				                                          msg,
-				                                          "Error!",
-				                                          JOptionPane.YES_NO_OPTION,
-				                                          JOptionPane.ERROR_MESSAGE);
-				if (input == JOptionPane.NO_OPTION) return;
-			}
 			this.window.closeImmediately();
 		}
 	}
@@ -412,7 +408,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				try {
 					this.store.writeOut(node);
 					this.statusBar.setText(node.getTask().getName() + " written to disk.");
-				} catch (Exception e) { /* TODO error */ }
+				} catch (Exception e) { /* TODO error; call a general error function? */ }
 			} else this.statusBar.setText(" ");
 		}
 		
@@ -432,7 +428,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	public void actionPerformed(ActionEvent event) {
 		if (event.getSource() == this.addButton) this.addButtonPressed();
 		else if (event.getSource() == this.removeButton) this.removeSelected();
-		else if (event.getSource() == this.saveButton) this.saveButtonPressed();
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
 		else if (event.getSource() == this.renameButton) this.renameButtonPressed();
 		else if (event.getSource() == this.settingsButton) TaskMistress.showSettings();
@@ -590,7 +585,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		 * @param flavor the flavour of the data to receive
 		 * @return the data object in the given flavour
 		 */
-		/* TODO is this actually needed? Or perhaps getNode() should be removed and this used instead? */
 		@Override
 		public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException, IOException {
 			if (!this.isDataFlavorSupported(flavor)) throw new UnsupportedFlavorException(flavor);

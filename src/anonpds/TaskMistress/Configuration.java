@@ -449,33 +449,4 @@ public class Configuration {
 			return text;
 		}
 	}
-	
-	/* DEBUG temporary test program */
-	/*
-	@SuppressWarnings("javadoc")
-	public static void main(String[] args) {
-		File file = new File("test.cfg");
-		Configuration conf = null;
-		
-		try {
-			conf = Configuration.parse(file);
-		} catch (Exception e) {
-			System.out.println(file.getPath() + ": error: " + e.getMessage());
-			System.exit(1);
-		}
-		
-		System.out.println("List of configuration variables:");
-		Set<String> names = conf.getAll();
-		for (String name : names) {
-			System.out.println("  * " + name + " : " + conf.get(name));
-		}
-		
-		System.out.println("\n\nThe saved configuration:");
-		try {
-			conf.store(System.out);
-		} catch (Exception e) {
-			System.out.println("Write error: " + e.getMessage());
-		}
-	}
-	*/
 }
