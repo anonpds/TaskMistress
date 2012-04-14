@@ -57,9 +57,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Text for the button that removes a task (tree). */
 	private static final String REMOVE_BUTTON_TEXT = "Delete";
 
-	/** Text for the button that saves all the tasks to disk. */
-	private static final String SAVE_BUTTON_TEXT = "Save";
-
 	/** Text for the button that opens another task tree. */
 	private static final String OPEN_BUTTON_TEXT = "Open";
 
@@ -86,9 +83,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	
 	/** Button that can be used to remove tasks. */
 	private JButton removeButton;
-	
-	/** Button that saves the changed tasks to disk. */
-	private JButton saveButton;
 	
 	/** Button that opens another task tree in a new Task Mistress window. */
 	private JButton openButton;
@@ -206,7 +200,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* set up the tool bar and its buttons */
 		this.addButton = new JButton(ADD_BUTTON_TEXT);
 		this.removeButton = new JButton(REMOVE_BUTTON_TEXT);
-		this.saveButton = new JButton(SAVE_BUTTON_TEXT);
 		this.openButton = new JButton(OPEN_BUTTON_TEXT);
 		this.renameButton = new JButton(RENAME_BUTTON_TEXT);
 		this.settingsButton = new JButton(SETTINGS_BUTTON_TEXT);
@@ -214,7 +207,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.toolBar = new JToolBar();
 		this.toolBar.add(addButton);
 		this.toolBar.add(removeButton);
-		this.toolBar.add(saveButton);
 		this.toolBar.add(openButton);
 		this.toolBar.add(renameButton);
 		this.toolBar.add(settingsButton);
@@ -222,7 +214,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* set the action listeners; the same action listener is used for all buttons */
 		this.addButton.addActionListener(this);
 		this.removeButton.addActionListener(this);
-		this.saveButton.addActionListener(this);
 		this.openButton.addActionListener(this);
 		this.renameButton.addActionListener(this);
 		this.settingsButton.addActionListener(this);
@@ -339,23 +330,10 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	}
 
 	/**
-	 * Saves the task tree to disk.
-	 * Called by the tool bar button listener when the Save button has been pressed.
-	 */
-	private void saveButtonPressed() {
-		try {
-			int saved = this.store.writeOut();
-			this.statusBar.setText(saved + " tasks written to disk.");
-		} catch (Exception e) {
-			// TODO errors
-		}
-	}
-
-	/**
 	 * Opens another task tree in new Task Mistress window. 
 	 * Called by the tool bar button listener when the Open button has been pressed.
 	 */
-	/* CRITICAL this should be done through the main class */
+	/* TODO this should be done through the main class */
 	private void openButtonPressed() {
 		/* show the path selection dialog and open the new Task Mistress window, if the user selected a path */
 		File path = TaskMistress.showPathDialog();
@@ -410,8 +388,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		public void windowClosing(WindowEvent event) {
 			/* update the currently open task */
 			if (this.window.taskView.getTask() != null) this.window.taskView.updateText();
-
-			/* call the function to save the task data and close the window */
+			
 			this.window.closeImmediately();
 		}
 	}
@@ -452,7 +429,6 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	public void actionPerformed(ActionEvent event) {
 		if (event.getSource() == this.addButton) this.addButtonPressed();
 		else if (event.getSource() == this.removeButton) this.removeSelected();
-		else if (event.getSource() == this.saveButton) this.saveButtonPressed();
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
 		else if (event.getSource() == this.renameButton) this.renameButtonPressed();
 		else if (event.getSource() == this.settingsButton) TaskMistress.showSettings();
