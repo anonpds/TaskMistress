@@ -71,8 +71,6 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 	 * @return the loaded icon
 	 */
 	private static Icon loadIcon(String name) {
-		/* TODO add debugging */
-		/* TODO perhaps change the priority and try file first and class loader then? */
 		ImageIcon icon;
 
 		URL url = TaskMistress.class.getClassLoader().getResource(name);

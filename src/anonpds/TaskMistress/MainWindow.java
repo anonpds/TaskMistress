@@ -116,9 +116,16 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 		
 		/* try to set the window size from task tree meta data */
-		Dimension d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
-		if (d != null) this.setSize(d);
-		else this.setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+		Dimension d = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+		try {
+			d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(this,
+			                              "Bad window size in configuration (" + e.getMessage() + "); using the default",
+			                              "Warning",
+			                              JOptionPane.WARNING_MESSAGE);
+		}
+		this.setSize(d);
 
 		/* build the UI */
 		this.buildUI();

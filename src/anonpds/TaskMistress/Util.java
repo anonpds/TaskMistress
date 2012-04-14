@@ -30,28 +30,32 @@ public class Util {
 	 * Parses a dimension from a string. 
 	 * @param value the string to parse
 	 * @return the Dimension parsed from the string or null on error
+	 * @throws Exception on parse errors
 	 */
-	/* TODO throw an Exception on errors */
-	public static Dimension parseDimension(String value) {
-		if (value == null) return null;
+	public static Dimension parseDimension(String value) throws Exception {
+		if (value == null) throw new NullPointerException("Util.parseDimensions: value = null");
 
 		/* find the separating 'x' in the string */
 		int i = value.indexOf('x');
-		if (i == -1) return null;
+		if (i == -1) throw new Exception("Util.parseDimensions: illegal value '" + value + "'");
 		
 		/* separate to two strings (catch IndexOutOfBoundsExceptions) */
 		String wString, hString;
 		try {
 			wString = value.substring(0, i);
 			hString = value.substring(i+1);
-		} catch (Exception e) { return null; }
+		} catch (Exception e) {
+			throw new Exception("Util.parseDimensions: illegal value '" + value + "'");
+		}
 		
 		Dimension d = null;
 		try {
 			int w = Integer.parseInt(wString);
 			int h = Integer.parseInt(hString);
 			d = new Dimension(w, h);
-		} catch (Exception e) { }
+		} catch (Exception e) {
+			throw new Exception("Util.parseDimensions: illegal value '" + value + "'");
+		}
 		
 		return d;
 	}

@@ -422,10 +422,14 @@ public class TaskStore implements TreeModelListener {
 			}
 		}
 		
-		/* append numbers at the end of the name until non-existing path is found */
-		/* TODO only 100 numbers are tried at most! Do something about this. */
-		for (int i = 0; i < 100; i++) {
-			String newName = name + i;
+		/* append characters at the end of the name until non-existing path is found */
+		String fillerChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		int len = fillerChars.length();
+		for (int i = 0; i < len * len * len; i++) {
+			String newName = name + "-" 
+					+ fillerChars.charAt(i / (len * len))
+					+ fillerChars.charAt((i / len) % len)
+					+ fillerChars.charAt(i % len);
 			File newPath = new File(path, newName);
 			if (!newPath.exists()) {
 				/* success! */
@@ -436,21 +440,6 @@ public class TaskStore implements TreeModelListener {
 		
 		/* error, no suitable name found */
 		throw new RuntimeException("no suitable path found for " + task.getName() + " in " + path.getPath());
-	}
-
-	/* TODO make this into actual debug function that outputs to some debug stream, instead of System.out */
-	@SuppressWarnings("javadoc")
-	public void print() {
-		print(0, this.getRoot());
-	}
-	/* TODO make this into actual debug function that outputs to some debug stream, instead of System.out */
-	@SuppressWarnings("javadoc")
-	public void print(int depth, TaskNode node) {
-		Task task = node.getTask();
-		for (int i = 0; i < depth; i++) System.out.print("  ");
-		if (task != null) System.out.println(task.getName() + ": " + task.getText());
-		for (int i = 0; i < node.getChildCount(); i++)
-			print(depth + 1, (TaskNode) node.getChildAt(i));
 	}
 
 	/**
