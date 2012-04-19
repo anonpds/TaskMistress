@@ -9,7 +9,10 @@
 
 package anonpds.TaskMistress;
 
+import java.util.Vector;
+
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.MutableTreeNode;
 
 /**
  * Class that implements a task tree node.
@@ -32,6 +35,15 @@ class Task extends DefaultMutableTreeNode {
 	/** The name of the task. */
 	private String name;
 	
+	/**
+	 * Plain name of the task. This name must be unique among sibling nodes and should be suitable for using as a
+	 * file name (or a part of file name), which means that all non-printable ASCII characters are stripped out.
+	 */
+	private String plainName;
+	
+	/** Maximum plain name length in characters. */
+	public static int MAX_PLAIN_NAME_LEN = 14;
+	
 	/** The time stamp of the task creation. */
 	private long timeStamp;
 
@@ -43,12 +55,7 @@ class Task extends DefaultMutableTreeNode {
 	
 	/** Constructs an empty task without a parent. Useful as a root node of a Task tree. */
 	public Task() {
-		this.parent = null;
-		this.name = null;
-		this.text = null;
-		this.timeStamp = 0;
-		this.dirty = true;
-		this.status = STATUS_DEFAULT;
+		this(null, null, null, 0L, true);
 	}
 	
 	/**
@@ -56,7 +63,7 @@ class Task extends DefaultMutableTreeNode {
 	 * @param parent the parent node
 	 */
 	public Task(Task parent) {
-		this.parent = parent;
+		this(parent, null, null, 0L, true);
 	}
 	
 	/**
@@ -74,6 +81,96 @@ class Task extends DefaultMutableTreeNode {
 		this.timeStamp = timeStamp;
 		this.dirty = dirty;
 		this.status = STATUS_DEFAULT;
+		
+		this.setPlainName();
+	}
+	
+	/**
+	 * Override the setParent method to update the plain name when a Task is moved in the tree.
+	 * @param parent the new parent
+	 */
+	@Override
+	public void setParent(MutableTreeNode parent) {
+		super.setParent(parent);
+		this.setPlainName();
+	}
+	
+	/**
+	 * Sets the plain name of a task. The plain name is a name with all the non-ASCII characters stripped out and
+	 * with possible additional characters to make the name unique among siblings of the node.
+	 */
+	public void setPlainName() {
+		/* root does not need a plain name */
+		if (this.getParent() == null) return;
+		
+		/* don't change the plain name if it's already set and unique */
+		if (this.plainName != null && !this.isPlainNameUsed(this.plainName)) return;
+		
+		/* strip all non-printable, non-ASCII characters from the name */
+		String plainName = "";
+		for (int i = 0; this.name != null && i < this.name.length(); i++) {
+			char ch = this.name.charAt(i);
+			if (ch < 128 && Character.isLetterOrDigit(ch)) plainName = plainName + ch;
+		}
+		
+		/* make sure the plain name is not too long */
+		if (plainName.length() > MAX_PLAIN_NAME_LEN) plainName = plainName.substring(0, 14);
+		
+		/* see if the plain name is unique among the node's siblings */
+		if (plainName.length() > 0) {
+			if (!this.isPlainNameUsed(plainName)) {
+				this.plainName = plainName;
+				return;
+			}
+			/* if no duplicate found, use the name as is */
+		}
+		
+		/* the plain name is not unique; add random characters to the end until a unique one is found */
+		String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"; /* list of chars to add */
+		for (int i = 1; i < Integer.MAX_VALUE; i++) {
+			/* make the string of additional characters */
+			String add = "";
+			for (int j = i; j > 0; j = j / chars.length()) {
+				add = add + chars.charAt(j % chars.length());
+			}
+
+			/* make sure the string stays short enough */
+			String newName = plainName + add;
+			if (plainName.length() + add.length() > MAX_PLAIN_NAME_LEN) {
+				newName = plainName.substring(0, MAX_PLAIN_NAME_LEN - add.length()) + add;
+			}
+			
+			/* see if the new name is unique */
+			if (!this.isPlainNameUsed(newName)) {
+				this.plainName = newName;
+				return;
+			}
+		}
+	}
+	
+	/**
+	 * Sets the given plain name for the task.
+	 * @param plainName the plain name to set
+	 */
+	public void setPlainName(String plainName) {
+		this.plainName = plainName;
+		this.setPlainName(); /* make sure the name is unique */
+	}
+
+	/**
+	 * Checks if the given plain name is used by one of the tasks siblings.
+	 * @return true if the name is used, false if not
+	 */
+	private boolean isPlainNameUsed(String plainName) {
+		Task parent = (Task) this.getParent();
+		for (int i = 0; i < parent.getChildCount(); i++) {
+			Task sibling = (Task) parent.getChildAt(i);
+			if (sibling == this) continue; /* ignore ourself */
+			
+			String siblingPlain = sibling.getPlainName();
+			if (siblingPlain != null && plainName.compareTo(siblingPlain) == 0) return(true); /* duplicate found! */
+		}
+		return(false);
 	}
 	
 	/**
@@ -118,6 +215,7 @@ class Task extends DefaultMutableTreeNode {
 		if (name == null || this.name == null || (this.name != null && name.compareTo(this.name) != 0)) {
 			this.dirty = true;
 			this.name = name;
+			this.setPlainName(); /* update the plain name */
 		}
 	}
 
@@ -127,6 +225,35 @@ class Task extends DefaultMutableTreeNode {
 	 */
 	public String getName() {
 		return this.name;
+	}
+	
+	/**
+	 * Returns the plain name of the node.
+	 * @return the plain name of the node
+	 */
+	public String getPlainName() {
+		return this.plainName;
+	}
+	
+	/**
+	 * Returns the full plain name of this task, containing a dot separated list of plain names from the root to this
+	 * node.
+	 * @return the full plain name of this task
+	 */
+	public String getFullPlainName() {
+		/* create a path of nodes from this node to root */
+		Vector<Task> path = new Vector<Task>();
+		for (Task task = this; task.getParent() != null; task = (Task) task.getParent()) {
+			path.add(task);
+		}
+
+		/* traverse the path in reverse order */
+		String name = path.get(path.size() - 1).getPlainName();
+		for (int i = path.size() - 2; i >= 0; i--) {
+			name = name + "." + path.get(i).getPlainName();
+		}
+		
+		return name;
 	}
 	
 	/**

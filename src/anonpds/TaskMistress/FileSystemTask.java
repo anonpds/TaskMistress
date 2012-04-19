@@ -36,9 +36,6 @@ public class FileSystemTask extends Task {
 	/** The name of the file that contains task text. */
 	private static final String TEXT_FILE = "task.txt";
 
-	/** The plain name of the task, which is used when writing the task to disk. */
-	private String plainName;
-
 	/** Constructs an empty FileSystemTask node. Useful as the root of a task tree. */
 	public FileSystemTask() {
 		super();
@@ -50,7 +47,6 @@ public class FileSystemTask extends Task {
 	 */
 	public FileSystemTask(Task parent) {
 		super(parent, null, null, 0, false);
-		this.plainName = null;
 	}
 	
 	/**
@@ -62,9 +58,8 @@ public class FileSystemTask extends Task {
 	 * @param dirty the dirty status of the task node
 	 * @param plainName the plain name of the task node
 	 */
-	public FileSystemTask(Task parent, String name, String text, long timeStamp, boolean dirty, String plainName) {
+	public FileSystemTask(Task parent, String name, String text, long timeStamp, boolean dirty) {
 		super(parent, name, text, timeStamp, dirty);
-		this.plainName = plainName;
 	}
 	
 	/**
@@ -157,22 +152,6 @@ public class FileSystemTask extends Task {
 		/* clear the dirty flag, since the task was just saved */
 		this.setDirty(false);
 		return true;
-	}
-
-	/**
-	 * Returns the plain name of the node.
-	 * @return the file system name of the node
-	 */
-	public String getPlainName() {
-		return this.plainName;
-	}
-
-	/**
-	 * Sets the plain name of the node.
-	 * @param name the file system name
-	 */
-	public void setPlainName(String name) {
-		this.plainName = name;
 	}
 
 	/**

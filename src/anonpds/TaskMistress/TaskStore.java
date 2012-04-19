@@ -190,7 +190,7 @@ public class TaskStore implements TreeModelListener {
 	 * @return the added node
 	 */
 	public Task add(Task parent, String name) {
-		Task task = new FileSystemTask(null, name, "", System.currentTimeMillis(), true, null);
+		Task task = new FileSystemTask(null, name, "", System.currentTimeMillis(), true);
 		this.treeModel.insertNodeInto(task, parent, parent.getChildCount());
 		return(task);
 	}
