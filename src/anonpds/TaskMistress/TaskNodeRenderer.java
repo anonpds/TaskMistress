@@ -99,13 +99,12 @@ public class TaskNodeRenderer extends DefaultTreeCellRenderer {
 		super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
 		
 		/* set the icon */
-		TaskNode node = (TaskNode) value;
-		Task task = node.getTask();
+		Task task = (Task) value;
 		Icon icon = this.defaultIcon;
 		
 		if (task == null) return this;
 		
-		if (node.getChildCount() > 0) {
+		if (task.getChildCount() > 0) {
 			switch (task.getStatus()) {
 			case Task.STATUS_DONE: icon = this.doneFolderIcon; break;
 			case Task.STATUS_UNDONE: icon = this.undoneFolderIcon; break;

@@ -9,11 +9,14 @@
 
 package anonpds.TaskMistress;
 
+import javax.swing.tree.DefaultMutableTreeNode;
+
 /**
  * Class that implements a task tree node.
  * @author anonpds <anonpds@gmail.com>
  */
-class Task {
+@SuppressWarnings("serial")
+class Task extends DefaultMutableTreeNode {
 	/** The status code for task that has been done. */
 	public static final short STATUS_DONE = 1;
 
@@ -38,14 +41,34 @@ class Task {
 	/** The status of the task; done, undone or default. */
 	private short status;
 	
+	/** Constructs an empty task without a parent. Useful as a root node of a Task tree. */
+	public Task() {
+		this.parent = null;
+		this.name = null;
+		this.text = null;
+		this.timeStamp = 0;
+		this.dirty = true;
+		this.status = STATUS_DEFAULT;
+	}
+	
+	/**
+	 * Constructs an empty task with parent.
+	 * @param parent the parent node
+	 */
+	public Task(Task parent) {
+		this.parent = parent;
+	}
+	
 	/**
 	 * Constructs a new task object.
+	 * @param parent the parent of this Task
 	 * @param name the name of the task 
 	 * @param text the text of the task
 	 * @param timeStamp the creation time stamp of the task
 	 * @param dirty true if the task is newly created, false if it was loaded from disk
 	 */
-	public Task(String name, String text, long timeStamp, boolean dirty) {
+	public Task(Task parent, String name, String text, long timeStamp, boolean dirty) {
+		this.parent = parent;
 		this.name = name;
 		this.text = text;
 		this.timeStamp = timeStamp;
@@ -138,10 +161,13 @@ class Task {
 	/**
 	 * Sets the status of the task.
 	 * @param status the new status of the task
+	 * @throws Exception if the status parameter is illegal
 	 */
-	public void setStatus(short status) {
-		if (status != STATUS_DONE && status != STATUS_UNDONE && status != STATUS_DEFAULT) return; /* TODO error */
+	public void setStatus(short status) throws Exception {
+		if (status != STATUS_DONE && status != STATUS_UNDONE && status != STATUS_DEFAULT)
+			throw new Exception("Bad status");
 		if (status == this.status) return; /* no change */
+
 		this.status = status;
 		this.setDirty(true);
 	}
@@ -152,5 +178,26 @@ class Task {
 	 */
 	public String toString() {
 		return this.name;
+	}
+
+	/**
+	 * Counts the nodes in the tree.
+	 * @return the total number of nodes in the tree
+	 */
+	public int countNodes() {
+		int nodes = 1;
+		for (int i = 0; i < this.getChildCount(); i++) {
+			Task node = (Task) this.getChildAt(i);
+			nodes += node.countNodes();
+		}
+		return(nodes);
+	}
+	
+	/** Sets all the nodes in the tree dirty. */
+	public void setAllDirty() {
+		this.setDirty(true);
+		for (int i = 0; i < this.getChildCount(); i++) {
+			((Task)this.getChildAt(i)).setAllDirty();
+		}
 	}
 }

@@ -58,9 +58,6 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 	/** The currently displayed Task. */
 	private Task task;
 
-	/** Tree node that contains the current task. */
-	private TaskNode node;
-
 	/** Indicates whether the editor text has changed since it was loaded from the task. */
 	private boolean dirty;
 
@@ -111,16 +108,14 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 	 * @param task the Task to display
 	 * @param node the tree node that contains the task
 	 */
-	public void setTask(Task task, TaskNode node) {
-		if (task == null) {
+	public void setTask(Task task) {
+		if (task.getParent() == null) {
 			this.task = null;
-			this.node = null;
 			this.statusBar.setText("No task selected.");
 			this.editor.close("");
 			this.setStatusBox(Task.STATUS_DEFAULT);
 		} else {
 			this.task = task;
-			this.node = node;
 			this.editor.open(this.task.getText());
 			this.setDirty(false);
 			this.setStatusBox(task.getStatus());
@@ -142,11 +137,11 @@ public class TaskView extends JPanel implements DocumentListener, ActionListener
 	private void setTaskStatus(short status) {
 		if (task == null || status == this.task.getStatus()) return;
 
-		this.task.setStatus(status);
+		try { this.task.setStatus(status); } catch (Exception e) { /* TODO error */ }
 		this.setDirty(true);
 		this.updateStatus();
 		
-		if (this.treeModel != null) this.treeModel.reload(node);
+		if (this.treeModel != null) this.treeModel.reload(this.task);
 	}
 	
 	/** Updates the status bar text. */

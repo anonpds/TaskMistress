@@ -19,6 +19,7 @@ import java.io.PrintWriter;
  * A sub-class of Task, which adds file system storage features to the task.
  * @author anonpds <anonpds@gmail.com>
  */
+@SuppressWarnings("serial")
 public class FileSystemTask extends Task {
 	/** Configuration variable name for the task name. */
 	private static final String CONFIG_NAME = "name";
@@ -38,22 +39,31 @@ public class FileSystemTask extends Task {
 	/** The plain name of the task, which is used when writing the task to disk. */
 	private String plainName;
 
-	/** Default constructor; creates an empty task. */
+	/** Constructs an empty FileSystemTask node. Useful as the root of a task tree. */
 	public FileSystemTask() {
-		super(null, null, 0, false);
+		super();
+	}
+	
+	/**
+	 * Default constructor; creates an empty task. 
+	 * @param parent the parent of this task node
+	 */
+	public FileSystemTask(Task parent) {
+		super(parent, null, null, 0, false);
 		this.plainName = null;
 	}
 	
 	/**
 	 * Constructs a new Task with the given parameters.
-	 * @param name
-	 * @param text
-	 * @param timeStamp
-	 * @param dirty
-	 * @param plainName
+	 * @param parent the parent of this task node
+	 * @param name the name of the task node
+	 * @param text the text of the task node
+	 * @param timeStamp the time stamp of the task node
+	 * @param dirty the dirty status of the task node
+	 * @param plainName the plain name of the task node
 	 */
-	public FileSystemTask(String name, String text, long timeStamp, boolean dirty, String plainName) {
-		super(name, text, timeStamp, dirty);
+	public FileSystemTask(Task parent, String name, String text, long timeStamp, boolean dirty, String plainName) {
+		super(parent, name, text, timeStamp, dirty);
 		this.plainName = plainName;
 	}
 	
