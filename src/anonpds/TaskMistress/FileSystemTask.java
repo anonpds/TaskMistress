@@ -36,6 +36,9 @@ public class FileSystemTask extends Task {
 	/** The name of the file that contains task text. */
 	private static final String TEXT_FILE = "task.txt";
 
+	/** The plain name of the task. */
+	private static final String CONFIG_PLAIN_NAME = "plain_name";
+
 	/** Constructs an empty FileSystemTask node. Useful as the root of a task tree. */
 	public FileSystemTask() {
 		super();
@@ -86,6 +89,7 @@ public class FileSystemTask extends Task {
 		/* use the fancy Configuration class to read and parse the meta data variables */
 		Configuration conf = Configuration.parse(metaFile);
 		name = conf.get(CONFIG_NAME);
+		/* plain name is taken from the directory name, so no: plainNAme = conf.get(CONFIG_PLAIN_NAME); */
 		date = conf.get(CONFIG_CREATION_TIME);
 		status = conf.get(CONFIG_STATUS);
 		
@@ -135,6 +139,7 @@ public class FileSystemTask extends Task {
 		File metaFile = new File(path, META_FILE);
 		Configuration conf = new Configuration();
 		conf.add(CONFIG_NAME, this.getName());
+		conf.add(CONFIG_PLAIN_NAME, this.getPlainName());
 		conf.add(CONFIG_CREATION_TIME, this.getCreationTime());
 		conf.add(CONFIG_STATUS, this.getStatus());
 		conf.store(metaFile);

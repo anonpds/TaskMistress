@@ -37,7 +37,8 @@ class Task extends DefaultMutableTreeNode {
 	
 	/**
 	 * Plain name of the task. This name must be unique among sibling nodes and should be suitable for using as a
-	 * file name (or a part of file name), which means that all non-printable ASCII characters are stripped out.
+	 * file name (or a part of file name), which means that all non-printable ASCII characters are stripped out and
+	 * all letters are changed to lower-case (for case-insensitive file systems).
 	 */
 	private String plainName;
 	
@@ -96,8 +97,9 @@ class Task extends DefaultMutableTreeNode {
 	}
 	
 	/**
-	 * Sets the plain name of a task. The plain name is a name with all the non-ASCII characters stripped out and
-	 * with possible additional characters to make the name unique among siblings of the node.
+	 * Sets the plain name of a task. The plain name is a name with all the non-ASCII characters stripped out, all
+	 * characters set to lower-case and with possible filler characters to make the name unique among siblings of
+	 * the node.
 	 */
 	public void setPlainName() {
 		/* root does not need a plain name */
@@ -106,10 +108,10 @@ class Task extends DefaultMutableTreeNode {
 		/* don't change the plain name if it's already set and unique */
 		if (this.plainName != null && !this.isPlainNameUsed(this.plainName)) return;
 		
-		/* strip all non-printable, non-ASCII characters from the name */
+		/* strip all non-printable, non-ASCII characters from the name and make all letters lower-case */
 		String plainName = "";
 		for (int i = 0; this.name != null && i < this.name.length(); i++) {
-			char ch = this.name.charAt(i);
+			char ch = Character.toLowerCase(this.name.charAt(i));
 			if (ch < 128 && Character.isLetterOrDigit(ch)) plainName = plainName + ch;
 		}
 		
@@ -126,7 +128,7 @@ class Task extends DefaultMutableTreeNode {
 		}
 		
 		/* the plain name is not unique; add random characters to the end until a unique one is found */
-		String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"; /* list of chars to add */
+		String chars = "0123456789abcdefghijklmnopqrstuvwxyz"; /* list of chars to add */
 		for (int i = 1; i < Integer.MAX_VALUE; i++) {
 			/* make the string of additional characters */
 			String add = "";
