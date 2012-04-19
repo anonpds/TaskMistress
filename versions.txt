@@ -1,6 +1,10 @@
 Versions
 ========
 
+0.??:
+
+  * combined Task and TaskNode classes to simplify the code
+
 
 0.1 Series
 ----------
