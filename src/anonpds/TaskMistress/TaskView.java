@@ -24,6 +24,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultTreeModel;
 
 /* CRITICAL does this task have to have its own dirty status? Why not just use the tasks one? */
+/* TODO remove the dirty status and instead update the task text from the editor text periodically (eg, every 15s) */
 
 /**
  * Implements a component that displays task editor and information about the currently edited task.
