@@ -90,10 +90,12 @@ public class FileSystemTask extends Task {
 				if (line.length() == 0) continue;
 				File taskFile = new File(path, line);
 				Task task = FileSystemTask.load(taskFile);
-				if (task != null) tree.add(task);
-				
-				/* add the children recursively */
-				loadTree(task, taskFile);
+				if (task != null) {
+					tree.add(task);
+					
+					/* add the children recursively */
+					loadTree(task, taskFile);
+				}
 			}
 			reader.close();
 		} else {
@@ -103,10 +105,12 @@ public class FileSystemTask extends Task {
 			for (File file : files) {
 				if (file.isDirectory()) {
 					Task task = FileSystemTask.load(file);
-					if (task != null) tree.add(task);
-					
-					/* recursively add the children */
-					loadTree(task, file);
+					if (task != null) {
+						tree.add(task);
+
+						/* recursively add the children */
+						loadTree(task, file);
+					}
 				}
 			}
 			/* mark the node dirty, so the task will be saved again and an index will be written */
@@ -138,7 +142,7 @@ public class FileSystemTask extends Task {
 		/* use the fancy Configuration class to read and parse the meta data variables */
 		Configuration conf = Configuration.parse(metaFile);
 		name = conf.get(CONFIG_NAME);
-		/* plain name is taken from the directory name, so no: plainNAme = conf.get(CONFIG_PLAIN_NAME); */
+		/* plain name is taken from the directory name, so not this: plainName = conf.get(CONFIG_PLAIN_NAME); */
 		date = conf.get(CONFIG_CREATION_TIME);
 		status = conf.get(CONFIG_STATUS);
 		
