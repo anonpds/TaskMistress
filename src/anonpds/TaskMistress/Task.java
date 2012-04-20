@@ -243,6 +243,9 @@ class Task extends DefaultMutableTreeNode {
 	 * @return the full plain name of this task
 	 */
 	public String getFullPlainName() {
+		/* root doesn't have plain name */
+		if (this.isRoot()) return null;
+		
 		/* create a path of nodes from this node to root */
 		Vector<Task> path = new Vector<Task>();
 		for (Task task = this; task.getParent() != null; task = (Task) task.getParent()) {

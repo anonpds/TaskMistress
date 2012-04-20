@@ -27,9 +27,6 @@ public class TaskStore implements TreeModelListener {
 	
 	private static final String LOCK_FILE = "tree.lck";
 
-	/** Maximum length of a plain name, that is used when saving tasks to file system. */
-	private static final int MAX_PLAIN_NAME_LEN = 12;
-
 	/** The meta data configuration variable of creation time. */
 	private static final String META_CREATION = "creationTime";
 
@@ -80,12 +77,9 @@ public class TaskStore implements TreeModelListener {
 		
 		/* add a listener to get information on changes to the tree; needed for task renames */
 		this.treeModel.addTreeModelListener(this);
-		
-		/* add the directories and their sub-directories recursively as nodes */
-		File[] files = this.path.listFiles();
-		for (File file : files) {
-			if (file.isDirectory()) this.loadTaskDirectory((Task) this.treeModel.getRoot(), file);
-		}
+
+		/* load the task tree */
+		FileSystemTask.loadTree((Task) this.treeModel.getRoot(), path);
 		
 		/* create the lock file to indicate that the task tree is open; set the file to be deleted on exit */
 		lockFile.createNewFile();
@@ -151,31 +145,6 @@ public class TaskStore implements TreeModelListener {
 	}
 
 	/**
-	 * Adds the task to the store from a directory and recursively adds all the sub-tasks in sub-directories.
-	 * @param tree the tree to add to
-	 * @param path the directory path to add
-	 * @throws Exception on any IO or parse errors
-	 */
-	private void loadTaskDirectory(Task tree, File path) throws Exception {
-		/* must be a directory */
-		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
-
-		/* create the task from the read data */
-		Task task = FileSystemTask.load(path);
-		
-		/* add the node to the tree */
-		if (task != null) {
-			tree.add(task);
-
-			/* finally recurse into any potential sub-directories */
-			File[] files = path.listFiles();
-			for (File file : files) {
-				if (file.isDirectory()) this.loadTaskDirectory(task, file);
-			}
-		}
-	}
-	
-	/**
 	 * Returns the root node of the tree.
 	 * @return the root node
 	 */
@@ -211,10 +180,6 @@ public class TaskStore implements TreeModelListener {
 		for (int i = 1; i < treePath.length; i++) {
 			/* get the Task object from the tree node */
 			Task task = (Task) treePath[i];
-			
-			/* get the file system (plain) name of the task; create it, if it's not set */
-			String curPath = ((FileSystemTask)task).getPlainName();
-			if (curPath == null) this.setFileSystemName(task);
 			
 			/* add the task directory to path */
 			path = new File(path, ((FileSystemTask)task).getPlainName());
@@ -273,15 +238,13 @@ public class TaskStore implements TreeModelListener {
 		
 		/* store the old task folder and plain name */
 		File path = this.getNodePath(node);
-		String plainName = ((FileSystemTask)node).getPlainName();
+		String plainName = node.getPlainName();
 		
-		/* rename the task and set the new file system name*/
+		/* rename the task */
 		node.setName(name);
-		((FileSystemTask)node).setPlainName(null);
-		this.setFileSystemName(node);
 		
 		/* no need to rename, if the plain name hasn't changed */
-		if (((FileSystemTask)node).getPlainName().compareTo(plainName) == 0) return;
+		if (node.getPlainName().compareTo(plainName) == 0) return;
 		
 		/* rename the folder */
 		path.renameTo(this.getNodePath(node));
@@ -307,16 +270,11 @@ public class TaskStore implements TreeModelListener {
 		/* save the file system path of the old node location */
 		File oldPath = this.getNodePath(node);
 		
-		/* invalidate the file system name of the node */
-		Task oldTask = node;
-		((FileSystemTask)oldTask).setPlainName(null);
-		
 		/* remove the node and add it under the destination node */
 		this.treeModel.removeNodeFromParent(node);
 		this.treeModel.insertNodeInto(node, dest, dest.getChildCount());
 		
-		/* update the file system: set the new file system (plain) name and move the task directory */
-		this.setFileSystemName(node);
+		/* update the file system: move the task directory */
 		oldPath.renameTo(this.getNodePath(node));
 	}
 
@@ -336,7 +294,7 @@ public class TaskStore implements TreeModelListener {
 	 * @throws Exception on any error
 	 */
 	public int writeOut(File path) throws Exception {
-		return this.writeOutRecurse(this.path, this.getRoot());
+		return FileSystemTask.saveTree(this.getRoot(), this.path);
 	}
 	
 	/**
@@ -347,94 +305,7 @@ public class TaskStore implements TreeModelListener {
 	public void writeOut(Task node) throws Exception {
 		/* get the path of the node and the task */
 		File path = this.getNodePath(node);
-		if (!node.isRoot()) ((FileSystemTask)node).save(path);
-	}
-
-	/**
-	 * Writes the tasks in given node and all its children to disk recursively.
-	 * @param path the path to write to
-	 * @param node the node to write out
-	 * @return the number of tasks actually written to disk
-	 * @throws Exception on IO errors
-	 */
-	private int writeOutRecurse(File path, Task node) throws Exception {
-		int numSaved = 0;
-		
-		/* get the user object from the node */
-		Task task = node;
-
-		/* Don't save the root node */
-		if (!node.isRoot())	if (((FileSystemTask)task).save(path)) numSaved++;
-		
-		/* recurse for each of the child nodes */
-		for (int i = 0; i < node.getChildCount(); i++) {
-			Task child = (Task) node.getChildAt(i);
-			
-			/* make sure the file system name has been set for the node */
-			this.setFileSystemName(child);
-			File newPath = new File(path, ((FileSystemTask)child).getPlainName());
-			numSaved += this.writeOutRecurse(newPath, child);
-		}
-		
-		return numSaved;
-	}
-
-	/**
-	 * Sets the file system name of a tree node, if it isn't set already.
-	 * @param curNode the node
-	 */
-	private void setFileSystemName(Task curNode) {
-		/* don't set for root */
-		if (curNode.isRoot()) return;
-		
-		/* get the user object from the tree node */
-		Task task = curNode;
-
-		/* don't set name if one already exists */
-		if (((FileSystemTask)task).getPlainName() != null) return;
-
-		/* the parent path under which this node will be written */
-		File path = this.getNodePath((Task) curNode.getParent());
-		
-		/* remove all silly characters from the node name and make everything lower-case */
-		String name = "";
-		for (int i = 0; i < task.getName().length(); i++) {
-			char ch = task.getName().charAt(i);
-			/* only accept letters or digits in the ASCII range */
-			if (ch < 128 && Character.isLetterOrDigit(ch)) name = name + Character.toLowerCase(ch);
-		}
-		
-		/* don't allow too long plain names */
-		if (name.length() > MAX_PLAIN_NAME_LEN) name = name.substring(0, MAX_PLAIN_NAME_LEN);
-		
-		/* if any characters left, try the name as is */
-		if (name.length() > 0) {
-			File newPath = new File(path, name);
-			if (!newPath.exists()) {
-				/* success */
-				((FileSystemTask)task).setPlainName(name);
-				return;
-			}
-		}
-		
-		/* append characters at the end of the name until non-existing path is found */
-		String fillerChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		int len = fillerChars.length();
-		for (int i = 0; i < len * len * len; i++) {
-			String newName = name + "-" 
-					+ fillerChars.charAt(i / (len * len))
-					+ fillerChars.charAt((i / len) % len)
-					+ fillerChars.charAt(i % len);
-			File newPath = new File(path, newName);
-			if (!newPath.exists()) {
-				/* success! */
-				((FileSystemTask)task).setPlainName(newName);
-				return;
-			}
-		}
-		
-		/* error, no suitable name found */
-		throw new RuntimeException("no suitable path found for " + task.getName() + " in " + path.getPath());
+		if (!node.isRoot()) FileSystemTask.saveTree(node, path);
 	}
 
 	/**
