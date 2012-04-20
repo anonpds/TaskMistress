@@ -4,6 +4,7 @@ Versions
 0.??:
 
   * combined Task and TaskNode classes to simplify the code
+  * added indexes for child tasks
 
 
 0.1 Series
