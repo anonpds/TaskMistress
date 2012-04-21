@@ -22,6 +22,10 @@ import javax.swing.UIManager;
  * etc.
  */
 
+/* CRITICAL there are still some problems with character encodings; everything should be made UTF-8 ("one encoding to
+ * rule them all"). Find out the problem and fix it!
+ */
+
 /**
  * A class that runs the TaskMistress program.
  * @author anonpds <anonpds@gmail.com>
