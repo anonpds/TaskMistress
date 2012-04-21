@@ -153,7 +153,7 @@ public class TaskStore implements TreeModelListener {
 	}
 
 	/**
-	 * Adds a named node as a child of the given node.
+	 * Adds a named node as a child of the given node. All add operations should be made through this function!
 	 * @param parent the parent node
 	 * @param name the name of the new node to add
 	 * @return the added node
@@ -161,6 +161,10 @@ public class TaskStore implements TreeModelListener {
 	public Task add(Task parent, String name) {
 		Task task = new FileSystemTask(null, name, "", System.currentTimeMillis(), true);
 		this.treeModel.insertNodeInto(task, parent, parent.getChildCount());
+		
+		// mark the parent as dirty to update the index
+		parent.setDirty(true);
+		
 		return(task);
 	}
 
@@ -225,6 +229,9 @@ public class TaskStore implements TreeModelListener {
 
 		/* remove the node from the tree */
 		this.treeModel.removeNodeFromParent(node);
+		
+		// mark parent node dirty to update the index
+		((Task)node.getParent()).setDirty(true);
 	}
 	
 	/**
@@ -267,12 +274,18 @@ public class TaskStore implements TreeModelListener {
 		for (Task child = dest; child != null; child = (Task) child.getParent())
 			if (child == node) throw new Exception("Cannot move node under itself!");
 
+		// mark the old parent dirty to update the index
+		((Task)node.getParent()).setDirty(true);
+		
 		/* save the file system path of the old node location */
 		File oldPath = this.getNodePath(node);
 		
 		/* remove the node and add it under the destination node */
 		this.treeModel.removeNodeFromParent(node);
 		this.treeModel.insertNodeInto(node, dest, dest.getChildCount());
+		
+		// mark the new parent dirty to update the index
+		dest.setDirty(true);
 		
 		/* update the file system: move the task directory */
 		oldPath.renameTo(this.getNodePath(node));
