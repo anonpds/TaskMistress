@@ -64,6 +64,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Text of the settings button. */
 	private static final String SETTINGS_BUTTON_TEXT = "Settings";
 
+	/** Text of the button that opens the debugger. */
+	private static final String DEBUG_BUTTON_TEXT = "Debugger";
+
 	/** The name of the variable that stores the window size. */
 	private static final String CONFIG_WINDOW_SIZE = "MainWindow.size";
 
@@ -90,6 +93,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	
 	/** Button that opens the settings window. */
 	private JButton settingsButton;
+	
+	/** Button for opening the Debugger window. */
+	private JButton debugButton;
 	
 	/** The tool bar which contains the action buttons. */
 	private JToolBar toolBar;
@@ -211,13 +217,15 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.openButton = new JButton(OPEN_BUTTON_TEXT);
 		this.renameButton = new JButton(RENAME_BUTTON_TEXT);
 		this.settingsButton = new JButton(SETTINGS_BUTTON_TEXT);
+		this.debugButton = new JButton(DEBUG_BUTTON_TEXT);
 	
 		this.toolBar = new JToolBar();
-		this.toolBar.add(addButton);
-		this.toolBar.add(removeButton);
-		this.toolBar.add(openButton);
-		this.toolBar.add(renameButton);
-		this.toolBar.add(settingsButton);
+		this.toolBar.add(this.addButton);
+		this.toolBar.add(this.removeButton);
+		this.toolBar.add(this.openButton);
+		this.toolBar.add(this.renameButton);
+		this.toolBar.add(this.settingsButton);
+		this.toolBar.add(this.debugButton);
 		
 		/* set the action listeners; the same action listener is used for all buttons */
 		this.addButton.addActionListener(this);
@@ -225,6 +233,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.openButton.addActionListener(this);
 		this.renameButton.addActionListener(this);
 		this.settingsButton.addActionListener(this);
+		this.debugButton.addActionListener(this);
 		
 		/* set up the status bar */
 		this.statusBar = new JLabel(" ");
@@ -434,6 +443,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
 		else if (event.getSource() == this.renameButton) this.renameButtonPressed();
 		else if (event.getSource() == this.settingsButton) TaskMistress.showSettings();
+		else if (event.getSource() == this.debugButton) Debugger.showDebugger(this, store);
 	}
 
 	/**

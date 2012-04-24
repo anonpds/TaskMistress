@@ -16,6 +16,10 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
+/* TODO wrap the load and save methods around try - catch clause and report errors to the debugger then throw the
+ * exception to the caller
+ */
+
 /**
  * A sub-class of Task, which adds file system storage features to the task.
  * @author anonpds <anonpds@gmail.com>
@@ -130,6 +134,8 @@ public class FileSystemTask extends Task {
 
 		FileSystemTask task = new FileSystemTask();
 		
+		Debugger.addMessage("FileSystemTask.load: " + path.getPath());
+		
 		/* get the file system name from the path */
 		String plainName = path.getName();
 		task.setPlainName(plainName);
@@ -172,6 +178,8 @@ public class FileSystemTask extends Task {
 		/* clear the dirty flag, since the Task was just read from disk */
 		task.setDirty(false);
 
+		Debugger.addMessage("FileSystemTask.load: " + path.getPath() + " success");
+
 		return task;
 	}
 	
@@ -211,6 +219,8 @@ public class FileSystemTask extends Task {
 
 		/* write the node only if dirty */
 		if (!this.isDirty()) return false;
+
+		Debugger.addMessage("FileSystemTask.save: " + path.getPath());
 		
 		/* write the meta data in new format only */
 		File metaFile = new File(path, META_FILE);
@@ -234,6 +244,8 @@ public class FileSystemTask extends Task {
 		/* save an index of the node's children */
 		saveIndex(this, path);
 		
+		Debugger.addMessage("FileSystemTask.save: " + path.getPath() + " success");
+		
 		/* clear the dirty flag, since the task was just saved */
 		this.setDirty(false);
 		return true;
@@ -246,6 +258,8 @@ public class FileSystemTask extends Task {
 	 * @throws Exception on IO errors
 	 */
 	public static void saveIndex(Task task, File path) throws Exception {
+		Debugger.addMessage("FileSystemTask.saveIndex(" + task.getName() + ", " + path.getPath());
+
 		File indexFile = new File(path, INDEX_FILE);
 		PrintWriter writer = new PrintWriter(indexFile);
 		for (int i = 0; i < task.getChildCount(); i++) {
@@ -253,6 +267,8 @@ public class FileSystemTask extends Task {
 			writer.println(child.getPlainName());
 		}
 		writer.close();
+		
+		Debugger.addMessage("FileSystemTask.saveIndex(" + task.getName() + ", " + path.getPath() + " success");
 	}
 
 	
