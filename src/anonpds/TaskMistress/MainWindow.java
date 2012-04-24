@@ -161,8 +161,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				int choice = JOptionPane.showConfirmDialog(this,
 				                                           "Saving the task tree failed. Try again?",
 				                                           "Error!",
-				                                           JOptionPane.YES_NO_OPTION);
+				                                           JOptionPane.YES_NO_CANCEL_OPTION);
 				if (choice == JOptionPane.YES_OPTION) continue;
+				if (choice == JOptionPane.CANCEL_OPTION) return;
 				
 				/* prompt the user whether to save the task tree in another place */
 				choice = JOptionPane.showConfirmDialog(this,
