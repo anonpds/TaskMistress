@@ -5,6 +5,7 @@ Versions
 
   * combined Task and TaskNode classes to simplify the code
   * added indexes for child tasks
+  * improved task moving
 
 
 0.1 Series
