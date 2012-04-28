@@ -26,6 +26,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 
+import javax.swing.DropMode;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -64,6 +65,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Text of the settings button. */
 	private static final String SETTINGS_BUTTON_TEXT = "Settings";
 
+	/** Text of the button that opens the debugger. */
+	private static final String DEBUG_BUTTON_TEXT = "Debugger";
+
 	/** The name of the variable that stores the window size. */
 	private static final String CONFIG_WINDOW_SIZE = "MainWindow.size";
 
@@ -91,6 +95,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	/** Button that opens the settings window. */
 	private JButton settingsButton;
 	
+	/** Button for opening the Debugger window. */
+	private JButton debugButton;
+	
 	/** The tool bar which contains the action buttons. */
 	private JToolBar toolBar;
 	
@@ -117,13 +124,15 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		
 		/* try to set the window size from task tree meta data */
 		Dimension d = new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT);
-		try {
-			d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
-		} catch (Exception e) {
-			JOptionPane.showMessageDialog(this,
-			                              "Bad window size in configuration (" + e.getMessage() + "); using the default",
-			                              "Warning",
-			                              JOptionPane.WARNING_MESSAGE);
+		if (this.store.getVariable(CONFIG_WINDOW_SIZE) != null) {
+			try {
+				d = Util.parseDimension(this.store.getVariable(CONFIG_WINDOW_SIZE));
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(this,
+				                              "Bad window size in configuration (" + e.getMessage() + "); using the default",
+				                              "Warning",
+				                              JOptionPane.WARNING_MESSAGE);
+			}
 		}
 		this.setSize(d);
 
@@ -159,8 +168,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 				int choice = JOptionPane.showConfirmDialog(this,
 				                                           "Saving the task tree failed. Try again?",
 				                                           "Error!",
-				                                           JOptionPane.YES_NO_OPTION);
+				                                           JOptionPane.YES_NO_CANCEL_OPTION);
 				if (choice == JOptionPane.YES_OPTION) continue;
+				if (choice == JOptionPane.CANCEL_OPTION) return;
 				
 				/* prompt the user whether to save the task tree in another place */
 				choice = JOptionPane.showConfirmDialog(this,
@@ -208,13 +218,15 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.openButton = new JButton(OPEN_BUTTON_TEXT);
 		this.renameButton = new JButton(RENAME_BUTTON_TEXT);
 		this.settingsButton = new JButton(SETTINGS_BUTTON_TEXT);
+		this.debugButton = new JButton(DEBUG_BUTTON_TEXT);
 	
 		this.toolBar = new JToolBar();
-		this.toolBar.add(addButton);
-		this.toolBar.add(removeButton);
-		this.toolBar.add(openButton);
-		this.toolBar.add(renameButton);
-		this.toolBar.add(settingsButton);
+		this.toolBar.add(this.addButton);
+		this.toolBar.add(this.removeButton);
+		this.toolBar.add(this.openButton);
+		this.toolBar.add(this.renameButton);
+		this.toolBar.add(this.settingsButton);
+		this.toolBar.add(this.debugButton);
 		
 		/* set the action listeners; the same action listener is used for all buttons */
 		this.addButton.addActionListener(this);
@@ -222,6 +234,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.openButton.addActionListener(this);
 		this.renameButton.addActionListener(this);
 		this.settingsButton.addActionListener(this);
+		this.debugButton.addActionListener(this);
 		
 		/* set up the status bar */
 		this.statusBar = new JLabel(" ");
@@ -231,6 +244,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setRootVisible(false);
 		this.treeView.setShowsRootHandles(true);
 		this.treeView.setDragEnabled(true);
+		this.treeView.setDropMode(DropMode.ON_OR_INSERT);
 		this.treeView.addTreeSelectionListener(this);
 		this.treeView.addMouseListener(new TreeViewMouseListener(this));
 		this.treeView.setTransferHandler(new TreeViewTransferHandler(this));
@@ -266,11 +280,11 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * Returns the currently selected node in the treeView. Returns the root node if no node is selected.
 	 * @return currently selected node or root if no selection
 	 */
-	private TaskNode getCurrentSelection() {
+	private Task getCurrentSelection() {
 		/* find the currently selected task; use tree root if no task selected */
-		TaskNode node = this.store.getRoot();
+		Task node = this.store.getRoot();
 		TreePath path = this.treeView.getSelectionPath();
-		if (path != null) node = (TaskNode) path.getLastPathComponent();
+		if (path != null) node = (Task) path.getLastPathComponent();
 		return node;
 	}
 		
@@ -280,7 +294,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 */
 	private void addButtonPressed() {
 		/* get the currently selected node and add a child task to it */
-		TaskNode node = this.getCurrentSelection();
+		Task node = this.getCurrentSelection();
 		this.add(node);
 	}
 
@@ -289,13 +303,13 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * in the treeView after it has been created.
 	 * @param parent the parent node under which to add the new tasks
 	 */
-	private void add(TaskNode parent) {
+	private void add(Task parent) {
 		/* ask the user for task name */
 		String name = JOptionPane.showInputDialog("Enter task name");
 		if (name == null) return;
 		
 		/* add the new node and inform the treeView of the changed structure */
-		TaskNode newNode = this.store.add(parent, name);
+		Task newNode = this.store.add(parent, name);
 
 		/* set the added task as the current selection */
 		TreeNode[] newPath = newNode.getPath();
@@ -303,7 +317,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setSelectionPath(treePath);
 		
 		/* show a message */
-		this.statusBar.setText(newNode.getTask().getName() + " added.");
+		this.statusBar.setText(newNode.getName() + " added.");
 	}
 
 	/**
@@ -316,13 +330,12 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		if (path == null) return;
 
 		/* get the selected node; don't remove root node */
-		TaskNode node = (TaskNode) path.getLastPathComponent();
+		Task node = (Task) path.getLastPathComponent();
 		if (node.isRoot()) return;
 
 		/* make sure the user wants to remove the task and its children */
-		Task task = node.getTask();
 		int answer = JOptionPane.showConfirmDialog(this,
-		                                           "Remove '" + task.getName() + "' and its children?",
+		                                           "Remove '" + node.getName() + "' and its children?",
 		                                           "Confirm delete",
 		                                           JOptionPane.YES_NO_OPTION);
 		if (answer != JOptionPane.YES_OPTION) return;
@@ -331,7 +344,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.store.remove(node);
 
 		/* show a message */
-		this.statusBar.setText(node.getTask().getName() + " removed.");
+		this.statusBar.setText(node.getName() + " removed.");
 	}
 
 	/**
@@ -355,9 +368,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * @param dest the destination node
 	 * @param node the node to move
 	 */
-	public void move(TaskNode dest, TaskNode node) {
+	public void move(Task dest, int index, Task node) {
 		try {
-			this.store.move(dest, node);
+			this.store.move(dest, index, node);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Cannot move node", JOptionPane.ERROR_MESSAGE);
 		}
@@ -401,22 +414,23 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/* save the text of the old selection */
 		TreePath path = event.getOldLeadSelectionPath();
 		if (path != null) {
-			TaskNode node = (TaskNode) path.getLastPathComponent();
-			Task task = node.getTask();
-			if (task != null) this.taskView.updateText();
-			if (task.isDirty()) { 
-				try {
-					this.store.writeOut(node);
-					this.statusBar.setText(node.getTask().getName() + " written to disk.");
-				} catch (Exception e) { /* TODO error; call a general error function? */ }
-			} else this.statusBar.setText(" ");
+			Task node = (Task) path.getLastPathComponent();
+			if (node.getParent() != null) { /* don't save root */
+				this.taskView.updateText();
+				if (node.isDirty()) { 
+					try {
+						this.store.writeOut(node);
+						this.statusBar.setText(node.getName() + " written to disk.");
+					} catch (Exception e) { /* TODO error; call a general error function? */ }
+				} else this.statusBar.setText(" ");
+			}
 		}
 		
 		/* set the taskView with the Task of the new selection */
 		path = event.getNewLeadSelectionPath();
 		if (path != null) {
-			TaskNode node = (TaskNode) path.getLastPathComponent();
-			this.taskView.setTask(node.getTask(), node);
+			Task node = (Task) path.getLastPathComponent();
+			this.taskView.setTask(node);
 		}
 	}
 
@@ -431,6 +445,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		else if (event.getSource() == this.openButton) this.openButtonPressed();
 		else if (event.getSource() == this.renameButton) this.renameButtonPressed();
 		else if (event.getSource() == this.settingsButton) TaskMistress.showSettings();
+		else if (event.getSource() == this.debugButton) Debugger.showDebugger(this, store);
 	}
 
 	/**
@@ -471,6 +486,12 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/** The MainWindow whose data transfer is handled. */
 		private MainWindow window;
 		
+		/** The destination path of the move. */
+		private TreePath path;
+		
+		/** The destination index of the move. */
+		private int index;
+		
 		/**
 		 * The default constructor.
 		 * @param window the MainWindow whose data transfer to handle
@@ -500,7 +521,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			
 			/* set the currently selected tree component as the transferable node */
 			JTree tree = (JTree) source;
-			TaskNode node = (TaskNode) tree.getSelectionPath().getLastPathComponent();
+			Task node = (Task) tree.getSelectionPath().getLastPathComponent();
 			
 			/* if no selected node, return null to indicate no transfer */
 			if (node == null) return null;
@@ -519,15 +540,14 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			if (action != MOVE || !(source instanceof JTree) || !(data instanceof TreeNodeTransferable)) return;
 
 			JTree tree = (JTree) source;
-			TaskNode node = ((TreeNodeTransferable)data).getNode();
+			Task node = ((TreeNodeTransferable)data).getNode();
 			
 			/* get the destination path; if it's null, move under root node */
-			TaskNode dest = this.window.store.getRoot();
-			TreePath path = tree.getSelectionPath();
-			if (path != null) dest = (TaskNode) path.getLastPathComponent();
+			Task dest = (Task) this.path.getLastPathComponent();
+			/* DEBUG */ System.out.println(dest + ", " + this.index);
 			
 			/* execute the move */
-			this.window.move(dest, node);
+			this.window.move(dest, this.index, node);
 		}
 		
 		/**
@@ -541,11 +561,18 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		}
 		
 		/**
-		 * No idea what this function is actually for, but doesn't work without it.
-		 * @return always returns true
+		 * Perform the data import.
+		 * @param support the transfer operation
 		 */
 		@Override
 		public boolean importData(TransferSupport support) {
+			if (!support.isDrop()) return false;
+
+			/* set the destination path and index */
+			JTree.DropLocation dl = (javax.swing.JTree.DropLocation) support.getDropLocation();
+			this.path = dl.getPath();
+			this.index = dl.getChildIndex();
+			
 			return true;
 		}
 	}
@@ -556,7 +583,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 */
 	class TreeNodeTransferable implements Transferable {
 		/** The node to transfer. */
-		private TaskNode node;
+		private Task node;
 		
 		/** The "flavours" of data accepted. */
 		private DataFlavor[] flavor;
@@ -565,18 +592,18 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		 * Default constructor.
 		 * @param node the node to transfer
 		 */
-		public TreeNodeTransferable(TaskNode node) {
+		public TreeNodeTransferable(Task node) {
 			this.node = node;
 			/* create a list of the accepted data "flavours"; only TaskNode classes are accepted */
 			this.flavor = new DataFlavor[1];
-			this.flavor[0] = new DataFlavor(TaskNode.class, "TaskNode");
+			this.flavor[0] = new DataFlavor(Task.class, Task.class.getName());
 		}
 		
 		/**
 		 * Returns the node that is being transferred.
 		 * @return the transferred node
 		 */
-		public TaskNode getNode() {
+		public Task getNode() {
 			return this.node;
 		}
 
@@ -637,10 +664,10 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		public void keyTyped(KeyEvent e) {
 			if (e.getKeyChar() == KeyEvent.VK_SPACE) {
 				/* SPACE: add task */
-				TaskNode node = this.window.getCurrentSelection();
+				Task node = this.window.getCurrentSelection();
 				
 				/* if shift down, add as sibling, otherwise add as child */
-				if (e.isShiftDown()) node = (TaskNode) node.getParent();
+				if (e.isShiftDown()) node = (Task) node.getParent();
 				if (node != null) this.window.add(node);
 			} else if (e.getKeyChar() == KeyEvent.VK_DELETE) {
 				this.window.removeSelected();

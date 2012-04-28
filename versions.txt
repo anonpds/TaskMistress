@@ -5,6 +5,19 @@ Versions
 0.1 Series
 ----------
 
+0.1g: 28th April 2012
+
+  * fixed bugs
+  * added debugger
+  * improved task moving
+
+0.1f: 20th April 2012
+
+  * fixed bugs
+  * combined Task and TaskNode classes to simplify the code
+  * added indexes for child tasks
+  * fixed the open button and removed the save button
+
 0.1e: 13th April 2012
 
   * added status messages to status bar

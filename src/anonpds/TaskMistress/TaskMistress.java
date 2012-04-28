@@ -22,6 +22,10 @@ import javax.swing.UIManager;
  * etc.
  */
 
+/* CRITICAL there are still some problems with character encodings; everything should be made UTF-8 ("one encoding to
+ * rule them all"). Find out the problem and fix it!
+ */
+
 /**
  * A class that runs the TaskMistress program.
  * @author anonpds <anonpds@gmail.com>
@@ -239,6 +243,10 @@ public class TaskMistress {
 		File confFile = TaskMistress.getConfigFile();
 		File defaultPath = null;
 		
+		if (confFile != null) 
+			Debugger.addMessage(PROGRAM_NAME + " " + PROGRAM_VERSION + ", config: " + confFile.getPath());
+		else Debugger.addMessage(PROGRAM_NAME + " " + PROGRAM_VERSION + ", config: null");
+
 		/* try to parse it if it exists and extract the default task tree */
 		try { config = Configuration.parse(confFile); } catch (Exception e) {
 			JOptionPane.showMessageDialog(null,

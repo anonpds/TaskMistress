@@ -12,13 +12,19 @@ package anonpds.TaskMistress;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+
+/* TODO wrap the load and save methods around try - catch clause and report errors to the debugger then throw the
+ * exception to the caller
+ */
 
 /**
  * A sub-class of Task, which adds file system storage features to the task.
  * @author anonpds <anonpds@gmail.com>
  */
+@SuppressWarnings("serial")
 public class FileSystemTask extends Task {
 	/** Configuration variable name for the task name. */
 	private static final String CONFIG_NAME = "name";
@@ -35,32 +41,91 @@ public class FileSystemTask extends Task {
 	/** The configuration variable of due date. */
 	private static final String CONFIG_DUE_DATE = "due_date";
 
+	/** The plain name of the task. */
+	private static final String CONFIG_PLAIN_NAME = "plain_name";
+
 	/** The name of the file that contains task meta data. */
 	private static final String META_FILE = "task.cfg";
 
 	/** The name of the file that contains task text. */
 	private static final String TEXT_FILE = "task.txt";
 
-	/** The plain name of the task, which is used when writing the task to disk. */
-	private String plainName;
+	/** The file containing the index of a nodes children. */
+	private static final String INDEX_FILE = "children.ndx";
 
-	/** Default constructor; creates an empty task. */
+	/** Constructs an empty FileSystemTask node. Useful as the root of a task tree. */
 	public FileSystemTask() {
-		super(null, null, 0, false);
-		this.plainName = null;
+		super();
+	}
+	
+	/**
+	 * Default constructor; creates an empty task. 
+	 * @param parent the parent of this task node
+	 */
+	public FileSystemTask(Task parent) {
+		super(parent, null, null, 0, false);
 	}
 	
 	/**
 	 * Constructs a new Task with the given parameters.
-	 * @param name
-	 * @param text
-	 * @param timeStamp
-	 * @param dirty
-	 * @param plainName
+	 * @param parent the parent of this task node
+	 * @param name the name of the task node
+	 * @param text the text of the task node
+	 * @param timeStamp the time stamp of the task node
+	 * @param dirty the dirty status of the task node
+	 * @param plainName the plain name of the task node
 	 */
-	public FileSystemTask(String name, String text, long timeStamp, boolean dirty, String plainName) {
-		super(name, text, timeStamp, dirty);
-		this.plainName = plainName;
+	public FileSystemTask(Task parent, String name, String text, long timeStamp, boolean dirty) {
+		super(parent, name, text, timeStamp, dirty);
+	}
+	
+	/**
+	 * Loads a tree of tasks.
+	 * @param tree the root node under which to load the tasks
+	 * @param path the directory path to load from
+	 * @throws Exception on any IO or parse errors
+	 */
+	public static void loadTree(Task tree, File path) throws Exception {
+		/* must be a directory */
+		if (!path.isDirectory()) throw new Exception("'" + path.getPath() + "' not a directory");
+
+		File indexFile = new File(path, INDEX_FILE);
+		if (indexFile.exists()) {
+			/* the index file exists, load nodes based on the index */
+			BufferedReader reader = new BufferedReader(new FileReader(indexFile));
+			String line;
+			
+			/* the index is just a list of sub-directories, one per line */
+			while ((line = reader.readLine()) != null) {
+				if (line.length() == 0) continue;
+				File taskFile = new File(path, line);
+				Task task = FileSystemTask.load(taskFile);
+				if (task != null) {
+					tree.add(task);
+					
+					/* add the children recursively */
+					loadTree(task, taskFile);
+				}
+			}
+			reader.close();
+		} else {
+			/* the node does not exist, load nodes from all suitable sub-directories */
+			/* TODO remove support for this in the future */
+			File[] files = path.listFiles();
+			for (File file : files) {
+				if (file.isDirectory()) {
+					Task task = FileSystemTask.load(file);
+					if (task != null) {
+						tree.add(task);
+
+						/* recursively add the children */
+						loadTree(task, file);
+					}
+				}
+			}
+			/* mark the node dirty, so the task will be saved again and an index will be written */
+			tree.setDirty(true);
+		}
 	}
 	
 	/**
@@ -75,6 +140,8 @@ public class FileSystemTask extends Task {
 
 		FileSystemTask task = new FileSystemTask();
 		
+		Debugger.addMessage("FileSystemTask.load: " + path.getPath());
+		
 		/* get the file system name from the path */
 		String plainName = path.getName();
 		task.setPlainName(plainName);
@@ -87,6 +154,7 @@ public class FileSystemTask extends Task {
 		/* use the fancy Configuration class to read and parse the meta data variables */
 		Configuration conf = Configuration.parse(metaFile);
 		name = conf.get(CONFIG_NAME);
+		/* plain name is taken from the directory name, so not this: plainName = conf.get(CONFIG_PLAIN_NAME); */
 		date = conf.get(CONFIG_CREATION_TIME);
 		status = conf.get(CONFIG_STATUS);
 		if ((dueString = conf.get(CONFIG_DUE)) == null) dueString = "false";
@@ -123,9 +191,35 @@ public class FileSystemTask extends Task {
 		/* clear the dirty flag, since the Task was just read from disk */
 		task.setDirty(false);
 
+		Debugger.addMessage("FileSystemTask.load: " + path.getPath() + " success");
+
 		return task;
 	}
 	
+	/**
+	 * Saves a tree of tasks to disk.
+	 * @param tree the root node of the tree to write out
+	 * @param path the path to write to
+	 * @return the number of tasks actually written to disk
+	 * @throws Exception on IO errors
+	 */
+	public static int saveTree(Task tree, File path) throws Exception {
+		int numSaved = 0;
+
+		/* Don't save the root node, but save an index of its children */
+		if (!tree.isRoot()) { if (((FileSystemTask)tree).save(path)) numSaved++;
+		} else saveIndex(tree, path);
+		
+		/* recurse for each of the child nodes */
+		for (int i = 0; i < tree.getChildCount(); i++) {
+			Task child = (Task) tree.getChildAt(i);
+			File newPath = new File(path, child.getPlainName());
+			numSaved += saveTree(child, newPath);
+		}
+		
+		return numSaved;
+	}
+
 	/**
 	 * Saves the Task to disk.
 	 * @param path the path to save the task to
@@ -138,11 +232,14 @@ public class FileSystemTask extends Task {
 
 		/* write the node only if dirty */
 		if (!this.isDirty()) return false;
+
+		Debugger.addMessage("FileSystemTask.save: " + path.getPath());
 		
 		/* write the meta data in new format only */
 		File metaFile = new File(path, META_FILE);
 		Configuration conf = new Configuration();
 		conf.add(CONFIG_NAME, this.getName());
+		conf.add(CONFIG_PLAIN_NAME, this.getPlainName());
 		conf.add(CONFIG_CREATION_TIME, this.getCreationTime());
 		conf.add(CONFIG_STATUS, this.getStatus());
 		conf.add(CONFIG_DUE, this.isDue());
@@ -159,27 +256,37 @@ public class FileSystemTask extends Task {
 			throw new Exception("can not write to " + textFile.getPath() + ": " + e.getMessage());
 		}
 		
+		/* save an index of the node's children */
+		saveIndex(this, path);
+		
+		Debugger.addMessage("FileSystemTask.save: " + path.getPath() + " success");
+		
 		/* clear the dirty flag, since the task was just saved */
 		this.setDirty(false);
 		return true;
 	}
 
 	/**
-	 * Returns the plain name of the node.
-	 * @return the file system name of the node
+	 * Saves an index of the tasks children.
+	 * @param task the task of which to write the index
+	 * @param path the path to write the index to
+	 * @throws Exception on IO errors
 	 */
-	public String getPlainName() {
-		return this.plainName;
+	public static void saveIndex(Task task, File path) throws Exception {
+		Debugger.addMessage("FileSystemTask.saveIndex(" + task.getName() + ", " + path.getPath());
+
+		File indexFile = new File(path, INDEX_FILE);
+		PrintWriter writer = new PrintWriter(indexFile);
+		for (int i = 0; i < task.getChildCount(); i++) {
+			Task child = (Task) task.getChildAt(i);
+			writer.println(child.getPlainName());
+		}
+		writer.close();
+		
+		Debugger.addMessage("FileSystemTask.saveIndex(" + task.getName() + ", " + path.getPath() + " success");
 	}
 
-	/**
-	 * Sets the plain name of the node.
-	 * @param name the file system name
-	 */
-	public void setPlainName(String name) {
-		this.plainName = name;
-	}
-
+	
 	/**
 	 * Removes the task files from a directory.
 	 * @param path the directory path from which to remove the files
