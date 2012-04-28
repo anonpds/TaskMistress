@@ -26,6 +26,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 
+import javax.swing.DropMode;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JFrame;
@@ -243,6 +244,7 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		this.treeView.setRootVisible(false);
 		this.treeView.setShowsRootHandles(true);
 		this.treeView.setDragEnabled(true);
+		this.treeView.setDropMode(DropMode.ON_OR_INSERT);
 		this.treeView.addTreeSelectionListener(this);
 		this.treeView.addMouseListener(new TreeViewMouseListener(this));
 		this.treeView.setTransferHandler(new TreeViewTransferHandler(this));
@@ -366,9 +368,9 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 	 * @param dest the destination node
 	 * @param node the node to move
 	 */
-	public void move(Task dest, Task node) {
+	public void move(Task dest, int index, Task node) {
 		try {
-			this.store.move(dest, node);
+			this.store.move(dest, index, node);
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Cannot move node", JOptionPane.ERROR_MESSAGE);
 		}
@@ -484,6 +486,12 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		/** The MainWindow whose data transfer is handled. */
 		private MainWindow window;
 		
+		/** The destination path of the move. */
+		private TreePath path;
+		
+		/** The destination index of the move. */
+		private int index;
+		
 		/**
 		 * The default constructor.
 		 * @param window the MainWindow whose data transfer to handle
@@ -535,12 +543,11 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 			Task node = ((TreeNodeTransferable)data).getNode();
 			
 			/* get the destination path; if it's null, move under root node */
-			Task dest = this.window.store.getRoot();
-			TreePath path = tree.getSelectionPath();
-			if (path != null) dest = (Task) path.getLastPathComponent();
+			Task dest = (Task) this.path.getLastPathComponent();
+			/* DEBUG */ System.out.println(dest + ", " + this.index);
 			
 			/* execute the move */
-			this.window.move(dest, node);
+			this.window.move(dest, this.index, node);
 		}
 		
 		/**
@@ -554,11 +561,18 @@ public class MainWindow extends JFrame implements TreeSelectionListener, ActionL
 		}
 		
 		/**
-		 * No idea what this function is actually for, but doesn't work without it.
-		 * @return always returns true
+		 * Perform the data import.
+		 * @param support the transfer operation
 		 */
 		@Override
 		public boolean importData(TransferSupport support) {
+			if (!support.isDrop()) return false;
+
+			/* set the destination path and index */
+			JTree.DropLocation dl = (javax.swing.JTree.DropLocation) support.getDropLocation();
+			this.path = dl.getPath();
+			this.index = dl.getChildIndex();
+			
 			return true;
 		}
 	}

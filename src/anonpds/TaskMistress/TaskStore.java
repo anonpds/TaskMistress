@@ -231,7 +231,7 @@ public class TaskStore implements TreeModelListener {
 		this.treeModel.removeNodeFromParent(node);
 		
 		// mark parent node dirty to update the index
-		((Task)node.getParent()).setDirty(true);
+		if (node.getParent() != null) ((Task)node.getParent()).setDirty(true);
 	}
 	
 	/**
@@ -264,11 +264,12 @@ public class TaskStore implements TreeModelListener {
 	 * Moves a node and all its children under another node.
 	 * @param dest the destination node
 	 * @param node the node to move
+	 * @param index the index to move the node to (negative to move to the end of the list)
 	 * @throws Exception when the move is not possible
 	 */
-	public void move(Task dest, Task node) throws Exception {
-		/* never move root node or a node unto itself or a node to its parent */
-		if (node.isRoot() || node == dest || node.getParent() == dest) return;
+	public void move(Task dest, int index, Task node) throws Exception {
+		/* never move root node or a node unto itself */
+		if (node.isRoot() || node == dest) return;
 
 		/* never move a parent down into itself */
 		for (Task child = dest; child != null; child = (Task) child.getParent())
@@ -279,13 +280,15 @@ public class TaskStore implements TreeModelListener {
 		
 		/* save the file system path of the old node location */
 		File oldPath = this.getNodePath(node);
-		
+
 		/* remove the node and add it under the destination node */
 		this.treeModel.removeNodeFromParent(node);
-		this.treeModel.insertNodeInto(node, dest, dest.getChildCount());
+		if (index < 0) index = dest.getChildCount();
+		this.treeModel.insertNodeInto(node, dest, index);
 		
 		// mark the new parent dirty to update the index
 		dest.setDirty(true);
+		writeOut(dest);
 		
 		/* update the file system: move the task directory */
 		oldPath.renameTo(this.getNodePath(node));
